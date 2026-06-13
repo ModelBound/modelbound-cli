@@ -1,44 +1,41 @@
 {
-  "name": "@modelbound/cli",
+  "name": "modelbound",
   "version": "0.1.0",
-  "description": "ModelBound CLI — token optimization, Skill Development Pipeline, test, benchmark, versions, and restore for agent skills. Works against any repo or the ModelBound cloud library.",
+  "description": "ModelBound CLI — token optimization, skill pipeline, and version management from your terminal.",
+  "license": "MIT",
   "type": "module",
   "bin": {
-    "modelbound": "./dist/cli.js",
-    "mb": "./dist/cli.js"
+    "modelbound": "dist/index.js",
+    "mb": "dist/index.js"
   },
-  "files": ["dist", "README.md", "LICENSE"],
+  "files": ["dist", "README.md", "CHANGELOG.md", "LICENSE"],
+  "engines": { "node": ">=20" },
   "scripts": {
-    "build": "tsc -p tsconfig.json && chmod +x dist/cli.js",
-    "dev": "tsx src/cli.ts",
-    "test": "node --test --import tsx ./src/**/*.test.ts",
+    "build": "tsc -p tsconfig.json && chmod +x dist/index.js",
+    "dev": "tsx src/index.ts",
+    "lint": "eslint src --ext .ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
     "prepublishOnly": "npm run build"
   },
-  "keywords": [
-    "modelbound",
-    "agent-skills",
-    "token-optimization",
-    "skill-pipeline",
-    "cli",
-    "mcp",
-    "cursor",
-    "claude-code"
-  ],
-  "author": "ModelBound",
-  "license": "MIT",
-  "repository": { "type": "git", "url": "https://github.com/ModelBound/modelbound-cli.git" },
-  "homepage": "https://modelbound.co/open-source",
-  "bugs": { "url": "https://github.com/ModelBound/modelbound-cli/issues" },
-  "engines": { "node": ">=20" },
   "dependencies": {
-    "chalk": "^5.3.0",
     "commander": "^12.1.0",
-    "ora": "^8.1.0",
-    "zod": "^3.23.8"
+    "picocolors": "^1.1.1",
+    "ink": "^5.0.1",
+    "react": "^18.3.1",
+    "zod": "^3.23.8",
+    "open": "^10.1.0",
+    "conf": "^13.0.1"
   },
   "devDependencies": {
     "@types/node": "^20.14.0",
-    "tsx": "^4.19.0",
-    "typescript": "^5.5.0"
-  }
+    "@types/react": "^18.3.3",
+    "tsx": "^4.16.0",
+    "typescript": "^5.5.3",
+    "vitest": "^2.0.0",
+    "eslint": "^9.7.0"
+  },
+  "repository": { "type": "git", "url": "git+https://github.com/ModelBound/modelbound-cli.git" },
+  "homepage": "https://modelbound.co",
+  "keywords": ["modelbound", "ai", "skills", "token-optimization", "mcp", "cli"]
 }

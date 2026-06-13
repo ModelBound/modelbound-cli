@@ -1,78 +1,79 @@
-// `mb pipeline run` + `mb pipeline status` — Skill Development Pipeline.
-// Mirrors the cloud `pipeline.*` MCP tools.
 import { Command } from "commander";
-import ora from "ora";
-import { api } from "../lib/api.js";
-import { globalOpts, printJson, printSuccess } from "../lib/render.js";
+import { z } from "zod";
+import pc from "picocolors";
+import { createClient, uuidv4 } from "../core/client.js";
+import { printSummary } from "../ui/summary.js";
 
-interface PipelineRun {
-  pipeline_run_id: string;
-  status: "queued" | "running" | "passed" | "failed";
-  phases?: Array<{ name: string; status: string; findings?: number; score?: number }>;
+const RunResp = z.object({ run_id: z.string(), status: z.string().optional() });
+const StatusResp = z.object({
+  status: z.string(),
+  stage_results: z.array(z.object({ stage: z.string(), ok: z.boolean().optional(), msg: z.string().optional() })).optional(),
+  summary: z.record(z.any()).optional(),
+});
+
+export function registerPipeline(p: Command) {
+  const pipe = p.command("pipeline").description("Skill Development Pipeline");
+
+  pipe.command("run <skillId>")
+    .description("Run Test → Optimize → Production for a skill")
+    .option("--targets <list>", "comma-separated targets (marketplace,claude,...)", "marketplace")
+    .option("--bump <kind>", "version bump: patch|minor|major|none", "patch")
+    .option("--apply-optimization", "apply optimization stage", false)
+    .option("--override-gates", "bypass trust/latency/test gates", false)
+    .option("--changelog <text>", "changelog entry")
+    .option("--no-watch", "do not stream stage progress")
+    .option("--yes", "skip confirmation when --apply-optimization is set")
+    .action(async (skillId: string, opts) => {
+      const json = !!p.opts().json;
+      const client = createClient({ profile: p.opts().profile ?? "default" });
+      const idem = uuidv4();
+      const r = await client.call("run-skill-pipeline", {
+        skill_id: skillId,
+        targets: String(opts.targets).split(",").map((s) => s.trim()).filter(Boolean),
+        version_bump: opts.bump,
+        apply_optimization: !!opts.applyOptimization,
+        override_gates: !!opts.overrideGates,
+        changelog: opts.changelog,
+      }, RunResp, idem);
+      if (!json) process.stdout.write(pc.dim(`run ${r.run_id} started\n`));
+      if (opts.watch === false) { printSummary({ ok: true, title: `Pipeline started`, meta: `run ${r.run_id}` }, json); return; }
+      await watch(client, r.run_id, json);
+    });
+
+  pipe.command("status <runId>").description("Show status for a pipeline run").action(async (runId: string) => {
+    const client = createClient({ profile: p.opts().profile ?? "default" });
+    const s = await client.call("skill-pipeline-status", { run_id: runId }, StatusResp);
+    process.stdout.write(JSON.stringify(s, null, 2) + "\n");
+  });
+
+  pipe.command("last <skillId>").description("Show the latest pipeline run for a skill").action(async (skillId: string) => {
+    const client = createClient({ profile: p.opts().profile ?? "default" });
+    const s = await client.call("skill-pipeline-status", { skill_id: skillId, latest: true }, StatusResp);
+    process.stdout.write(JSON.stringify(s, null, 2) + "\n");
+  });
 }
 
-export function registerPipeline(program: Command): void {
-  const pipeline = program
-    .command("pipeline")
-    .description("Skill Development Pipeline — lint, trust, test, benchmark, optimize.");
-
-  pipeline
-    .command("run <skill>")
-    .description("Run the pipeline against a skill (slug or ID).")
-    .option("--phases <list>", "comma-separated subset (lint,trust,test,benchmark,optimize)")
-    .option("--wait", "wait for completion and print results", false)
-    .action(async (skill: string, opts: { phases?: string; wait: boolean }, cmd: Command) => {
-      const g = globalOpts(cmd);
-      const spinner = g.json ? null : ora(`Starting pipeline for ${skill}…`).start();
-      const body: Record<string, unknown> = { slug: skill };
-      if (opts.phases) body.phases = opts.phases.split(",").map((s) => s.trim());
-      const run = await api<PipelineRun>("/api/cli/pipeline/run", {
-        method: "POST",
-        apiUrl: g.apiUrl,
-        body,
-      });
-      spinner?.succeed(`Pipeline ${run.pipeline_run_id} ${run.status}.`);
-      if (!opts.wait) {
-        if (g.json) return printJson(run);
-        printSuccess(`Run: mb pipeline status ${run.pipeline_run_id}`);
-        return;
-      }
-      // Poll until terminal state.
-      const wait = ora("Running…").start();
-      let final: PipelineRun = run;
-      while (final.status === "queued" || final.status === "running") {
-        await new Promise((r) => setTimeout(r, 2000));
-        final = await api<PipelineRun>(
-          `/api/cli/pipeline/status?id=${encodeURIComponent(final.pipeline_run_id)}`,
-          { apiUrl: g.apiUrl },
-        );
-      }
-      wait.stop();
-      if (g.json) return printJson(final);
-      printSuccess(`Status: ${final.status}`);
-      for (const p of final.phases ?? []) {
-        // eslint-disable-next-line no-console
-        console.log(`  ${p.status === "passed" ? "✓" : p.status === "failed" ? "✗" : "·"} ${p.name}` +
-          (p.score != null ? `  score=${p.score}` : "") +
-          (p.findings != null ? `  findings=${p.findings}` : ""));
-      }
-      if (final.status === "failed") process.exit(2);
-    });
-
-  pipeline
-    .command("status <runId>")
-    .description("Get the status of a pipeline run.")
-    .action(async (runId: string, _opts, cmd: Command) => {
-      const g = globalOpts(cmd);
-      const res = await api<PipelineRun>(
-        `/api/cli/pipeline/status?id=${encodeURIComponent(runId)}`,
-        { apiUrl: g.apiUrl },
-      );
-      if (g.json) return printJson(res);
-      printSuccess(`${res.pipeline_run_id} → ${res.status}`);
-      for (const p of res.phases ?? []) {
-        // eslint-disable-next-line no-console
-        console.log(`  ${p.name}: ${p.status}`);
-      }
-    });
+async function watch(client: ReturnType<typeof createClient>, runId: string, json: boolean) {
+  const seen = new Set<string>();
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const s = await client.call("skill-pipeline-status", { run_id: runId }, StatusResp);
+    for (const sr of s.stage_results ?? []) {
+      const key = `${sr.stage}:${sr.ok ?? ""}:${sr.msg ?? ""}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      if (json) process.stdout.write(JSON.stringify({ kind: "stage", ...sr }) + "\n");
+      else process.stdout.write(`  ${sr.ok ? pc.green("✓") : pc.dim("·")} ${sr.stage}${sr.msg ? pc.dim(" — " + sr.msg) : ""}\n`);
+    }
+    if (["complete", "failed", "cancelled"].includes(s.status)) {
+      printSummary({
+        ok: s.status === "complete",
+        title: `Pipeline ${s.status}`,
+        meta: `run ${runId}`,
+        undo: `modelbound version list <skill>  # then restore`,
+      }, json);
+      return;
+    }
+    await new Promise((r) => setTimeout(r, 1500));
+  }
 }

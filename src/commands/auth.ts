@@ -1,128 +1,69 @@
-// `mb login` — OAuth-style device-code flow.
-//
-// Flow:
-//   1. POST /api/cli/device/start            → { device_code, user_code, verification_uri, interval, expires_in }
-//   2. Show user_code + verification_uri to the user.
-//   3. Poll  POST /api/cli/device/poll       → { status: "pending" | "approved" | "denied" | "expired", token? }
-//   4. On approved, persist token to ~/.modelbound/config.json.
-//
-// The CLI never reads or writes a password and never opens a browser
-// silently; the user pastes the short code into the page themselves.
 import { Command } from "commander";
-import chalk from "chalk";
-import ora from "ora";
-import { api, ApiError } from "../lib/api.js";
-import { clearConfig, loadConfig, saveConfig } from "../lib/config.js";
-import { die, globalOpts, printJson, printSuccess } from "../lib/render.js";
+import pc from "picocolors";
+import { z } from "zod";
+import open from "open";
+import { createClient } from "../core/client.js";
+import { saveProfile, loadProfile } from "../core/config.js";
 
-interface DeviceStart {
-  device_code: string;
-  user_code: string;
-  verification_uri: string;
-  interval: number;
-  expires_in: number;
-}
-interface DevicePoll {
-  status: "pending" | "approved" | "denied" | "expired" | "slow_down";
-  token?: string;
-  user?: { id: string; email?: string; team_id?: string };
-}
+export function registerAuth(p: Command) {
+  const auth = p.command("auth").description("Authentication");
 
-export function registerAuth(program: Command): void {
-  program
-    .command("login")
-    .description("Authenticate via device-code flow.")
-    .action(async (_opts, cmd: Command) => {
-      const g = globalOpts(cmd);
-      const start = await api<DeviceStart>("/api/cli/device/start", {
-        method: "POST",
-        anonymous: true,
-        apiUrl: g.apiUrl,
-        body: { client: "modelbound-cli", version: "0.1.0" },
-      });
-
-      // eslint-disable-next-line no-console
-      console.log(
-        `\n  Open ${chalk.cyan(start.verification_uri)}\n` +
-          `  Enter code: ${chalk.bold.yellow(start.user_code)}\n`,
+  auth.command("login")
+    .description("Sign in via device-code flow")
+    .option("--api-key <key>", "skip device flow and store an mb_live_ key directly")
+    .action(async (opts) => {
+      const profileName = p.opts().profile ?? "default";
+      if (opts.apiKey) {
+        if (!String(opts.apiKey).startsWith("mb_live_")) throw new Error("API key must start with mb_live_");
+        saveProfile(profileName, { apiKey: opts.apiKey });
+        process.stdout.write(pc.green("✓ ") + `Saved key to profile "${profileName}"\n`);
+        return;
+      }
+      const client = createClient({ profile: profileName, apiKey: "anon" });
+      const start = await client.call(
+        "extension-device-auth",
+        { action: "start" },
+        z.object({ device_code: z.string(), user_code: z.string(), verification_uri: z.string(), interval: z.number().optional() }),
       );
-
-      const spinner = ora("Waiting for approval…").start();
-      const intervalMs = Math.max(1, start.interval) * 1000;
-      const deadline = Date.now() + start.expires_in * 1000;
-      let delay = intervalMs;
-
-      while (Date.now() < deadline) {
-        await new Promise((r) => setTimeout(r, delay));
-        try {
-          const poll = await api<DevicePoll>("/api/cli/device/poll", {
-            method: "POST",
-            anonymous: true,
-            apiUrl: g.apiUrl,
-            body: { device_code: start.device_code },
-          });
-          if (poll.status === "approved" && poll.token) {
-            spinner.succeed("Authenticated.");
-            saveConfig({
-              ...loadConfig(),
-              api_url: g.apiUrl,
-              token: poll.token,
-              user: poll.user,
-            });
-            printSuccess(
-              poll.user?.email
-                ? `Logged in as ${poll.user.email}`
-                : "Logged in.",
-            );
-            return;
-          }
-          if (poll.status === "denied") {
-            spinner.fail("Login denied.");
-            process.exit(1);
-          }
-          if (poll.status === "expired") {
-            spinner.fail("Login code expired. Run `mb login` again.");
-            process.exit(1);
-          }
-          if (poll.status === "slow_down") delay += 1000;
-        } catch (e) {
-          if (e instanceof ApiError && e.status === 428) {
-            // pending — keep polling
-            continue;
-          }
-          spinner.fail(e instanceof Error ? e.message : String(e));
-          process.exit(1);
-        }
-      }
-      spinner.fail("Login timed out.");
-      process.exit(1);
-    });
-
-  program
-    .command("logout")
-    .description("Forget the locally stored API token.")
-    .action(() => {
-      clearConfig();
-      printSuccess("Logged out.");
-    });
-
-  program
-    .command("whoami")
-    .description("Show the currently authenticated user.")
-    .action(async (_opts, cmd: Command) => {
-      const g = globalOpts(cmd);
-      try {
-        const me = await api<{ id: string; email?: string; team_id?: string }>(
-          "/api/cli/whoami",
-          { apiUrl: g.apiUrl },
+      process.stdout.write(`\nOpen: ${pc.cyan(start.verification_uri)}\nCode: ${pc.bold(start.user_code)}\n\n`);
+      try { await open(start.verification_uri); } catch { /* headless */ }
+      const interval = (start.interval ?? 5) * 1000;
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        await new Promise((r) => setTimeout(r, interval));
+        const poll = await client.call(
+          "extension-device-auth",
+          { action: "poll", device_code: start.device_code },
+          z.object({ status: z.string(), api_key: z.string().optional() }),
         );
-        if (g.json) return printJson(me);
-        printSuccess(me.email ?? me.id);
-      } catch (e) {
-        if (e instanceof ApiError && (e.status === 401 || e.status === 403)) {
-          die("Not authenticated. Run `mb login`.");
+        if (poll.status === "authorized" && poll.api_key) {
+          saveProfile(profileName, { apiKey: poll.api_key });
+          process.stdout.write(pc.green("✓ ") + `Signed in to profile "${profileName}"\n`);
+          return;
         }
-        throw e;
+        if (poll.status === "denied" || poll.status === "expired") throw new Error(`Device flow ${poll.status}`);
       }
     });
+
+  auth.command("status").description("Show current profile auth status").action(async () => {
+    const name = p.opts().profile ?? "default";
+    const prof = loadProfile(name);
+    if (!prof.apiKey) { process.stdout.write(pc.yellow("• ") + `Profile "${name}" is not signed in\n`); return; }
+    const client = createClient({ profile: name });
+    try {
+      const r = await client.call("extension-auth-check", {}, z.object({
+        valid: z.boolean(), user_email: z.string().nullable().optional(), team_name: z.string().nullable().optional(), plan: z.string().optional(),
+      }));
+      if (!r.valid) { process.stdout.write(pc.red("✖ ") + "Invalid or expired key\n"); return; }
+      process.stdout.write(pc.green("✓ ") + `${r.user_email ?? "unknown"} · team ${r.team_name ?? "—"} · plan ${r.plan ?? "—"}\n`);
+    } catch (e: any) {
+      process.stdout.write(pc.red("✖ ") + (e?.message ?? String(e)) + "\n");
+    }
+  });
+
+  auth.command("logout").description("Clear stored key for profile").action(() => {
+    const name = p.opts().profile ?? "default";
+    saveProfile(name, { apiKey: undefined });
+    process.stdout.write(pc.green("✓ ") + `Logged out of profile "${name}"\n`);
+  });
 }
