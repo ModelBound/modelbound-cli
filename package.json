@@ -8,8 +8,15 @@
     "modelbound": "dist/index.js",
     "mb": "dist/index.js"
   },
-  "files": ["dist", "README.md", "CHANGELOG.md", "LICENSE"],
-  "engines": { "node": ">=20" },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json && chmod +x dist/index.js",
     "dev": "tsx src/index.ts",
@@ -20,22 +27,33 @@
   },
   "dependencies": {
     "commander": "^15.0.0",
-    "picocolors": "^1.1.1",
+    "conf": "^13.0.1",
     "ink": "^5.0.1",
-    "react": "^18.3.1",
-    "zod": "^3.23.8",
     "open": "^11.0.0",
-    "conf": "^13.0.1"
+    "ora": "^9.4.0",
+    "picocolors": "^1.1.1",
+    "react": "^18.3.1",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/node": "^25.9.3",
     "@types/react": "^18.3.3",
+    "eslint": "^10.5.0",
     "tsx": "^4.16.0",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.8",
-    "eslint": "^10.5.0"
+    "vitest": "^4.1.8"
   },
-  "repository": { "type": "git", "url": "git+https://github.com/ModelBound/modelbound-cli.git" },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ModelBound/modelbound-cli.git"
+  },
   "homepage": "https://modelbound.co",
-  "keywords": ["modelbound", "ai", "skills", "token-optimization", "mcp", "cli"]
+  "keywords": [
+    "modelbound",
+    "ai",
+    "skills",
+    "token-optimization",
+    "mcp",
+    "cli"
+  ]
 }
