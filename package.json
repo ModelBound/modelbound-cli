@@ -31,7 +31,7 @@
     "@types/node": "^20.14.0",
     "@types/react": "^18.3.3",
     "tsx": "^4.16.0",
-    "typescript": "^5.5.3",
+    "typescript": "^6.0.3",
     "vitest": "^2.0.0",
     "eslint": "^9.7.0"
   },
