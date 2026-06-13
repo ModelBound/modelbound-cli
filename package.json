@@ -1,0 +1,44 @@
+{
+  "name": "@modelbound/cli",
+  "version": "0.1.0",
+  "description": "ModelBound CLI — token optimization, Skill Development Pipeline, test, benchmark, versions, and restore for agent skills. Works against any repo or the ModelBound cloud library.",
+  "type": "module",
+  "bin": {
+    "modelbound": "./dist/cli.js",
+    "mb": "./dist/cli.js"
+  },
+  "files": ["dist", "README.md", "LICENSE"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json && chmod +x dist/cli.js",
+    "dev": "tsx src/cli.ts",
+    "test": "node --test --import tsx ./src/**/*.test.ts",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "modelbound",
+    "agent-skills",
+    "token-optimization",
+    "skill-pipeline",
+    "cli",
+    "mcp",
+    "cursor",
+    "claude-code"
+  ],
+  "author": "ModelBound",
+  "license": "MIT",
+  "repository": { "type": "git", "url": "https://github.com/ModelBound/modelbound-cli.git" },
+  "homepage": "https://modelbound.co/open-source",
+  "bugs": { "url": "https://github.com/ModelBound/modelbound-cli/issues" },
+  "engines": { "node": ">=20" },
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "commander": "^12.1.0",
+    "ora": "^8.1.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.0"
+  }
+}
