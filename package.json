@@ -32,7 +32,7 @@
     "@types/react": "^18.3.3",
     "tsx": "^4.16.0",
     "typescript": "^6.0.3",
-    "vitest": "^2.0.0",
+    "vitest": "^4.1.8",
     "eslint": "^10.5.0"
   },
   "repository": { "type": "git", "url": "git+https://github.com/ModelBound/modelbound-cli.git" },
