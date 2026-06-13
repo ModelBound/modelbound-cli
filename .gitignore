@@ -1,0 +1,8 @@
+node_modules
+dist
+.modelbound
+*.log
+.DS_Store
+.env
+.env.*
+coverage
