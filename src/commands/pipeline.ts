@@ -1,82 +1,159 @@
 import { Command } from "commander";
 import pc from "picocolors";
-import { api } from "../lib/api.js";
+import { callMcpTool, ensureSkillSynced, resolveSkillId, setWorkspaceContext } from "../core/skill.js";
 import { globalOpts, printJson, printSuccess } from "../lib/render.js";
+
+const TERMINAL = new Set(["passed", "failed", "completed", "errored", "skipped"]);
+
+interface PipelineRun {
+  id?: string;
+  status?: string;
+  failed_stage?: string;
+  stage_results?: Record<string, unknown>;
+  version_before?: string;
+  version_after?: string;
+}
 
 export function registerPipeline(p: Command) {
   const pipe = p.command("pipeline").description("Skill Development Pipeline");
 
-  pipe.command("run <skillId>")
+  pipe.command("run")
     .description("Run Test → Optimize → Production for a skill")
-    .option("--targets <list>", "comma-separated targets (marketplace,claude,...)", "marketplace")
+    .requiredOption("--skill <target>", "skill file path, slug, or UUID")
+    .option("--stage <name>", "full | test_optimize | production", "full")
+    .option("--targets <list>", "comma-separated targets", "save,marketplace,claude_export")
     .option("--bump <kind>", "version bump: patch|minor|major|none", "patch")
-    .option("--apply-optimization", "apply optimization stage", false)
-    .option("--override-gates", "bypass trust/latency/test gates", false)
+    .option("--override-gate", "bypass trust/latency/test gates", false)
     .option("--changelog <text>", "changelog entry")
-    .option("--no-watch", "do not stream stage progress")
-    .option("--yes", "skip confirmation when --apply-optimization is set")
-    .action(async (skillId: string, opts, cmd) => {
+    .option("--repo <name>", "org/repo override")
+    .option("--no-watch", "do not poll stage progress")
+    .action(async (opts, cmd) => {
       const g = globalOpts(cmd);
-      const r = await api<{ run_id: string; status?: string; version_after?: string }>("/api/cli/pipeline/run", {
-        method: "POST",
-        apiUrl: g.apiUrl,
-        body: {
-          skill_id: skillId,
-          targets: String(opts.targets).split(",").map((s: string) => s.trim()).filter(Boolean),
-          version_bump: opts.bump,
-          apply_optimization: !!opts.applyOptimization,
-          override_gates: !!opts.overrideGates,
-          changelog: opts.changelog,
-        },
-      });
-      if (g.json) return printJson(r);
-      process.stdout.write(pc.dim(`run ${r.run_id} started\n`));
+      const profile = p.opts().profile ?? "default";
+      const cwd = process.cwd();
+      const mcpOpts = { profile, mcpUrl: g.mcpUrl, repo: opts.repo };
+
+      await setWorkspaceContext(cwd, mcpOpts);
+      const skillId = await ensureSkillSynced(cwd, opts.skill, mcpOpts);
+
+      const r = await callMcpTool("run_skill_pipeline", {
+        skill_id: skillId,
+        stage: opts.stage,
+        targets: String(opts.targets).split(",").map((s: string) => s.trim()).filter(Boolean),
+        changelog: opts.changelog ?? null,
+        version_bump: opts.bump,
+        override_gate: !!opts.overrideGate,
+      }, { ...mcpOpts, aliases: ["skills.runPipeline"] }) as { run_id?: string; id?: string; status?: string; version_after?: string };
+
+      const runId = r.run_id ?? r.id;
+      if (g.json) return printJson({ ...r, skill_id: skillId, run_id: runId });
+      process.stdout.write(pc.dim(`run ${runId ?? "—"} started · skill ${skillId}\n`));
       if (opts.watch === false) {
-        printSuccess(`Pipeline ${r.status ?? "started"} · run ${r.run_id}${r.version_after ? ` · ${r.version_after}` : ""}`);
+        printSuccess(`Pipeline ${r.status ?? "started"} · run ${runId ?? "—"}${r.version_after ? ` · ${r.version_after}` : ""}`);
         return;
       }
-      await watch(r.run_id, g);
+      if (runId) await watchByRunId(runId, mcpOpts, g);
+      else await watchBySkillId(skillId, mcpOpts, g);
     });
 
-  pipe.command("status <runId>").description("Show status for a pipeline run").action(async (runId: string, _opts, cmd) => {
-    const g = globalOpts(cmd);
-    const r = await api<{ status: string; stage_results?: Array<{ stage: string; ok?: boolean; msg?: string }> }>(
-      "/api/cli/pipeline/status",
-      { method: "POST", apiUrl: g.apiUrl, body: { pipeline_run_id: runId } },
-    );
-    if (g.json) return printJson(r);
-    process.stdout.write(JSON.stringify(r, null, 2) + "\n");
-  });
+  pipe.command("status")
+    .description("Show pipeline status for a skill or run")
+    .option("--skill <target>", "skill file path, slug, or UUID (latest run)")
+    .option("--run <id>", "specific pipeline run id")
+    .option("--limit <n>", "number of runs to return", "1")
+    .action(async (opts, cmd) => {
+      const g = globalOpts(cmd);
+      const profile = p.opts().profile ?? "default";
+      const mcpOpts = { profile, mcpUrl: g.mcpUrl };
 
-  pipe.command("last <skillId>").description("Show the latest pipeline run for a skill").action(async (skillId: string, _opts, cmd) => {
-    const g = globalOpts(cmd);
-    const r = await api<{ status: string; stage_results?: Array<{ stage: string; ok?: boolean; msg?: string }> }>(
-      "/api/cli/pipeline/status",
-      { method: "POST", apiUrl: g.apiUrl, body: { skill_id: skillId, latest: true } },
-    );
-    if (g.json) return printJson(r);
-    process.stdout.write(JSON.stringify(r, null, 2) + "\n");
-  });
+      let args: Record<string, unknown>;
+      if (opts.run) {
+        args = { run_id: opts.run };
+      } else if (opts.skill) {
+        const skillId = await resolveSkillId(process.cwd(), opts.skill, mcpOpts);
+        args = { skill_id: skillId, limit: Number(opts.limit) };
+      } else {
+        throw new Error("Provide --skill or --run.");
+      }
+
+      const r = await callMcpTool(
+        "get_skill_pipeline_status",
+        args,
+        { ...mcpOpts, aliases: ["skills.getPipelineStatus", "pipeline.status"] },
+      );
+      if (g.json) return printJson(r);
+      renderStatus(r);
+    });
+
+  // Legacy positional aliases
+  pipe.command("last <skillId>")
+    .description("(legacy) Show latest pipeline run — prefer pipeline status --skill")
+    .action(async (skillId: string, _opts, cmd) => {
+      const g = globalOpts(cmd);
+      const profile = p.opts().profile ?? "default";
+      const id = await resolveSkillId(process.cwd(), skillId, { profile, mcpUrl: g.mcpUrl });
+      const r = await callMcpTool("get_skill_pipeline_status", { skill_id: id, limit: 1 }, { profile, mcpUrl: g.mcpUrl });
+      if (g.json) return printJson(r);
+      renderStatus(r);
+    });
 }
 
-async function watch(runId: string, g: { json?: boolean; apiUrl?: string }) {
+function renderStatus(payload: unknown): void {
+  const data = payload as { runs?: PipelineRun[]; status?: string; stage_results?: unknown };
+  const runs = data.runs ?? (data.status ? [data as PipelineRun] : []);
+  if (!runs.length) {
+    process.stdout.write("(no pipeline runs)\n");
+    return;
+  }
+  for (const run of runs) {
+    process.stdout.write(JSON.stringify(run, null, 2) + "\n");
+  }
+}
+
+async function watchBySkillId(
+  skillId: string,
+  mcpOpts: { profile?: string; mcpUrl?: string },
+  g: { json?: boolean },
+): Promise<void> {
   const seen = new Set<string>();
   while (true) {
-    const s = await api<{ status: string; stage_results?: Array<{ stage: string; ok?: boolean; msg?: string }> }>(
-      "/api/cli/pipeline/status",
-      { method: "POST", apiUrl: g.apiUrl, body: { pipeline_run_id: runId } },
-    );
-    for (const sr of s.stage_results ?? []) {
-      const key = `${sr.stage}:${sr.ok ?? ""}:${sr.msg ?? ""}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      if (g.json) process.stdout.write(JSON.stringify({ kind: "stage", ...sr }) + "\n");
-      else process.stdout.write(`  ${sr.ok ? pc.green("✓") : pc.dim("·")} ${sr.stage}${sr.msg ? pc.dim(" — " + sr.msg) : ""}\n`);
+    const s = await callMcpTool("get_skill_pipeline_status", { skill_id: skillId, limit: 1 }, mcpOpts) as { runs?: PipelineRun[] };
+    const run = s.runs?.[0];
+    if (!run) break;
+    emitStages(run, seen, g);
+    if (run.status && TERMINAL.has(run.status)) {
+      printSuccess(`Pipeline ${run.status} · run ${run.id ?? "—"}`);
+      return;
     }
-    if (["complete", "failed", "cancelled", "passed"].includes(s.status)) {
+    await new Promise((r) => setTimeout(r, 1500));
+  }
+}
+
+async function watchByRunId(
+  runId: string,
+  mcpOpts: { profile?: string; mcpUrl?: string },
+  g: { json?: boolean },
+): Promise<void> {
+  const seen = new Set<string>();
+  while (true) {
+    const s = await callMcpTool("get_skill_pipeline_status", { run_id: runId }, mcpOpts) as PipelineRun;
+    emitStages(s, seen, g);
+    if (s.status && TERMINAL.has(s.status)) {
       printSuccess(`Pipeline ${s.status} · run ${runId}`);
       return;
     }
     await new Promise((r) => setTimeout(r, 1500));
+  }
+}
+
+function emitStages(run: PipelineRun, seen: Set<string>, g: { json?: boolean }): void {
+  const stages = run.stage_results;
+  if (!stages || typeof stages !== "object") return;
+  for (const [stage, detail] of Object.entries(stages)) {
+    const key = `${stage}:${JSON.stringify(detail)}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    if (g.json) process.stdout.write(JSON.stringify({ kind: "stage", stage, detail }) + "\n");
+    else process.stdout.write(`  ${pc.dim("·")} ${stage}${detail ? pc.dim(" — " + JSON.stringify(detail)) : ""}\n`);
   }
 }

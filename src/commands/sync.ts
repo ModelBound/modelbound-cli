@@ -4,13 +4,15 @@ import * as path from "node:path";
 import { z } from "zod";
 import { createClient } from "../core/client.js";
 import { backupFile } from "../core/backup.js";
+import { ensureSkillSynced, resolveSkillFromPath, setWorkspaceContext } from "../core/skill.js";
 import { printSummary } from "../ui/summary.js";
+import { globalOpts, printJson, printSuccess } from "../lib/render.js";
 
 const PushResp = z.object({ skill_id: z.string().optional(), version_id: z.string().optional() });
 const PullResp = z.object({ content: z.string(), skill_id: z.string().optional(), version_id: z.string().optional() });
 
 export function registerSync(p: Command) {
-  p.command("push <path>").description("Push a local skill file to ModelBound").action(async (filePath: string) => {
+  p.command("push <path>").description("Push a local skill file to ModelBound (legacy edge sync)").action(async (filePath: string) => {
     const client = createClient({ profile: p.opts().profile ?? "default" });
     const content = await fs.readFile(path.resolve(filePath), "utf8");
     const r = await client.call("sync-cloud-push", { path: filePath, content }, PushResp);
@@ -32,7 +34,26 @@ export function registerSync(p: Command) {
     }, !!p.opts().json);
   });
 
-  p.command("sync").description("Interactive diff + reconcile of local vs cloud").action(async () => {
-    process.stdout.write("sync: interactive mode coming in 0.2 — use `push` / `pull` for now\n");
-  });
+  p.command("sync")
+    .description("Sync a local skill file to cloud via MCP (repo-linked UUID)")
+    .option("--file <path>", "skill file to sync")
+    .option("--repo <name>", "org/repo override")
+    .action(async (opts, cmd) => {
+      const g = globalOpts(cmd);
+      const profile = p.opts().profile ?? "default";
+      const cwd = process.cwd();
+
+      if (!opts.file) {
+        process.stdout.write("Usage: modelbound sync --file <path>\n");
+        process.stdout.write("Also available: modelbound push <path> · modelbound pull <skill-id>\n");
+        return;
+      }
+
+      const target = resolveSkillFromPath(cwd, opts.file);
+      await setWorkspaceContext(cwd, { profile, mcpUrl: g.mcpUrl, repo: opts.repo });
+      const skillId = await ensureSkillSynced(cwd, opts.file, { profile, mcpUrl: g.mcpUrl, repo: opts.repo });
+      const out = { skill_id: skillId, path: target.relativePath, slug: target.slug };
+      if (g.json) return printJson(out);
+      printSuccess(`Synced ${target.relativePath} → ${skillId}`);
+    });
 }
