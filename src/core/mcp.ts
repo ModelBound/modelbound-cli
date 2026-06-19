@@ -94,7 +94,16 @@ export function createMcpClient(opts: McpClientOpts = {}) {
       },
       body: JSON.stringify({ jsonrpc: "2.0", id: nextId++, method, params }),
     });
-    const raw = await res.text();
+    const contentType = res.headers.get("content-type") ?? "";
+    let raw = await res.text();
+    if (contentType.includes("text/event-stream")) {
+      const dataLines = raw
+        .split("\n")
+        .filter((l) => l.startsWith("data:"))
+        .map((l) => l.slice(5).trim())
+        .filter(Boolean);
+      raw = dataLines[dataLines.length - 1] ?? "";
+    }
     let body: { result?: unknown; error?: { message?: string; data?: unknown } } = {};
     if (raw) {
       try {

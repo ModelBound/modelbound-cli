@@ -96,6 +96,56 @@ export function registerPipeline(p: Command) {
       if (g.json) return printJson(r);
       renderStatus(r);
     });
+
+  pipe.command("config")
+    .description("Read or update pipeline gate configuration for a skill")
+    .requiredOption("--skill <target>", "skill file path, slug, or UUID")
+    .option("--min-trust <n>", "minimum trust score 0-100", parseFloat)
+    .option("--max-latency <ms>", "max latency budget in ms", parseFloat)
+    .option("--enforce-trust", "enforce trust gate")
+    .option("--no-enforce-trust", "disable trust gate")
+    .option("--enforce-latency", "enforce latency gate")
+    .option("--no-enforce-latency", "disable latency gate")
+    .option("--enforce-tests", "enforce saved test cases gate")
+    .option("--no-enforce-tests", "disable tests gate")
+    .option("--targets <list>", "default production targets (comma-separated)")
+    .option("--repo <name>", "org/repo override")
+    .action(async (opts, cmd) => {
+      const g = globalOpts(cmd);
+      const profile = p.opts().profile ?? "default";
+      const mcpOpts = { profile, mcpUrl: g.mcpUrl, repo: opts.repo };
+      await setWorkspaceContext(process.cwd(), mcpOpts);
+      const skillId = await ensureSkillSynced(process.cwd(), opts.skill, mcpOpts);
+
+      const args: Record<string, unknown> = { skill_id: skillId };
+      if (opts.minTrust != null) args.min_trust_score = opts.minTrust;
+      if (opts.maxLatency != null) args.max_latency_ms = opts.maxLatency;
+      if (opts.enforceTrust) args.enforce_trust_gate = true;
+      if (opts.noEnforceTrust) args.enforce_trust_gate = false;
+      if (opts.enforceLatency) args.enforce_latency_gate = true;
+      if (opts.noEnforceLatency) args.enforce_latency_gate = false;
+      if (opts.enforceTests) args.enforce_tests_gate = true;
+      if (opts.noEnforceTests) args.enforce_tests_gate = false;
+      if (opts.targets) {
+        args.default_targets = String(opts.targets).split(",").map((s: string) => s.trim()).filter(Boolean);
+      }
+
+      const hasUpdate = Object.keys(args).length > 1;
+      if (!hasUpdate) {
+        const skill = await callMcpTool("get_skill", { skill_id: skillId }, { ...mcpOpts, aliases: ["skills.get"] }) as { pipeline_config?: unknown };
+        if (g.json) return printJson({ skill_id: skillId, pipeline_config: skill?.pipeline_config ?? {} });
+        process.stdout.write(JSON.stringify({ skill_id: skillId, pipeline_config: skill?.pipeline_config ?? {} }, null, 2) + "\n");
+        return;
+      }
+
+      const r = await callMcpTool("set_skill_pipeline_config", args, {
+        ...mcpOpts,
+        aliases: ["skills.setPipelineConfig", "pipeline.config"],
+      });
+      if (g.json) return printJson(r);
+      printSuccess(`Pipeline config updated for ${skillId}`);
+      process.stdout.write(JSON.stringify(r, null, 2) + "\n");
+    });
 }
 
 function renderStatus(payload: unknown): void {

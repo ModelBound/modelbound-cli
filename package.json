@@ -1,6 +1,6 @@
 {
   "name": "modelbound",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "description": "ModelBound CLI — token optimization, skill pipeline, and version management from your terminal.",
   "license": "MIT",
   "type": "module",

@@ -44,9 +44,19 @@ export async function prepareSyncAuth(profile: string, apiKey: string): Promise<
   const entry = cache[fp];
   if (entry && Date.now() - entry.validatedAt < CACHE_TTL_MS && entry.valid) return;
 
-  const client = createClient({ profile, apiKey });
-  const r = await client.call("extension-auth-check", {}, AuthCheck);
-  cache[fp] = { fingerprint: fp, validatedAt: Date.now(), valid: r.valid };
-  saveCache(cache);
-  if (!r.valid) throw new Error("Invalid or expired API key. Run `modelbound auth login`.");
+  try {
+    const client = createClient({ profile, apiKey });
+    const r = await client.call("extension-auth-check", {}, AuthCheck);
+    if (r.valid) {
+      cache[fp] = { fingerprint: fp, validatedAt: Date.now(), valid: true };
+      saveCache(cache);
+      return;
+    }
+    cache[fp] = { fingerprint: fp, validatedAt: Date.now(), valid: false };
+    saveCache(cache);
+    throw new Error("Invalid or expired API key. Run `modelbound auth login`.");
+  } catch (e) {
+    // Transient auth-check failures — proceed; MCP is source of truth (extension parity).
+    if (e instanceof Error && e.message.includes("Invalid or expired")) throw e;
+  }
 }

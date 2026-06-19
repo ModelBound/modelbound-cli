@@ -34,24 +34,26 @@ export function registerSync(p: Command) {
     }, !!p.opts().json);
   });
 
-  p.command("sync")
+  p.command("sync [path]")
     .description("Sync a local skill file to cloud via MCP (repo-linked UUID)")
-    .option("--file <path>", "skill file to sync")
+    .option("--file <path>", "skill file to sync (alias for positional path)")
     .option("--repo <name>", "org/repo override")
-    .action(async (opts, cmd) => {
+    .action(async (pathArg: string | undefined, opts, cmd) => {
       const g = globalOpts(cmd);
       const profile = p.opts().profile ?? "default";
       const cwd = process.cwd();
+      const filePath = opts.file ?? pathArg;
 
-      if (!opts.file) {
+      if (!filePath) {
         process.stdout.write("Usage: modelbound sync --file <path>\n");
+        process.stdout.write("       modelbound sync <path>\n");
         process.stdout.write("Also available: modelbound push <path> · modelbound pull <skill-id>\n");
         return;
       }
 
-      const target = resolveSkillFromPath(cwd, opts.file);
+      const target = resolveSkillFromPath(cwd, filePath);
       await setWorkspaceContext(cwd, { profile, mcpUrl: g.mcpUrl, repo: opts.repo });
-      const skillId = await ensureSkillSynced(cwd, opts.file, { profile, mcpUrl: g.mcpUrl, repo: opts.repo });
+      const skillId = await ensureSkillSynced(cwd, filePath, { profile, mcpUrl: g.mcpUrl, repo: opts.repo });
       const out = { skill_id: skillId, path: target.relativePath, slug: target.slug };
       if (g.json) return printJson(out);
       printSuccess(`Synced ${target.relativePath} → ${skillId}`);

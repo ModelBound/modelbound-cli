@@ -14,7 +14,13 @@ export function registerCompare(p: Command) {
       const skillId = await resolveSkillId(process.cwd(), opts.skill, { profile, mcpUrl: g.mcpUrl });
       const r = await callMcpTool(
         "compare_skill_versions",
-        { skill_id: skillId, from_version: opts.from, to_version: opts.to },
+        {
+          skill_id: skillId,
+          from_version: opts.from,
+          to_version: opts.to,
+          version_a: opts.from,
+          version_b: opts.to,
+        },
         { profile, mcpUrl: g.mcpUrl, aliases: ["skills.compareVersions"] },
       );
       if (g.json) return printJson(r);

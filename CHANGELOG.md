@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.2.0 — 2026-06-19
+
+### Added (extension v1.9.16 / Test & Optimize parity)
+- `modelbound context set` — workspace scoping via `set_workspace_context`
+- `modelbound sync --file <path>` (positional path alias supported)
+- `modelbound findings list|ignore|unignore` — Trust & Safety panel equivalents
+- `modelbound benchmark --skill` — `benchmark_skill` MCP tool
+- `modelbound compare --skill` — `compare_skill_versions` (sends both snake_case arg sets)
+- `modelbound suggest --skill` — `suggest_skill_improvements`
+- `modelbound pipeline run|status` — pre-flight sync + workspace context
+- `modelbound test --skill`, `modelbound versions --skill`
+- `modelbound health` — MCP reachability + auth status
+- Top-level aliases: `login`, `logout`, `whoami`
+
+### Changed
+- MCP client parses SSE (`text/event-stream`) responses from hosted server
+- `prepareSyncAuth` proceeds on transient auth-check failures (extension parity)
+- Skill resolution from file paths under `.modelbound/`, `.cursor/rules/`, `.kiro/skills/`, `.claude/`, `.agents/skills/`
+- Documented hosted-backend blockers in `docs/BACKEND-BLOCKERS.md`
+
 ## 0.1.0 — initial scaffold
 
 - `modelbound auth login|logout|status` (device-code, reuses hosted `extension-device-auth`)

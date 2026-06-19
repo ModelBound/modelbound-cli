@@ -1,39 +1,47 @@
-// `mb health` — connectivity + auth + rate-limit check.
-// Useful as the first thing to run in CI to catch token / network issues
-// before any pipeline step actually consumes credits.
 import { Command } from "commander";
-import { api, ApiError } from "../lib/api.js";
-import { globalOpts, printJson, printSuccess, printWarn } from "../lib/render.js";
-import { resolveApiUrl, resolveToken } from "../lib/config.js";
+import pc from "picocolors";
+import { runAuthStatus } from "./auth.js";
+import { resolveApiKey, resolveMcpUrl, createMcpClient } from "../core/mcp.js";
+import { globalOpts, printJson, printSuccess } from "../lib/render.js";
 
 export function registerHealth(program: Command): void {
   program
     .command("health")
-    .description("Check API connectivity, auth, and rate limits.")
+    .description("Check MCP connectivity and auth status")
     .action(async (_opts, cmd: Command) => {
       const g = globalOpts(cmd);
-      const out: Record<string, unknown> = {
-        api_url: resolveApiUrl(g.apiUrl),
-        token_present: Boolean(resolveToken()),
-      };
+      const profile = program.opts().profile ?? "default";
+      const out: Record<string, unknown> = { mcp_url: resolveMcpUrl(g.mcpUrl) };
+
       try {
-        const res = await api<{ ok: boolean; rate_limit?: { limit: number; remaining: number; reset: number } }>(
-          "/api/cli/health",
-          { apiUrl: g.apiUrl },
-        );
-        out.api = res;
-      } catch (e) {
-        if (e instanceof ApiError && (e.status === 401 || e.status === 403)) {
-          if (g.json) {
-            out.api = { ok: false, error: "unauthenticated" };
-            return printJson(out);
-          }
-          printWarn("Not authenticated. Run `mb login`.");
-          return;
-        }
-        throw e;
+        resolveApiKey(profile);
+        out.api_key_present = true;
+      } catch {
+        out.api_key_present = false;
+        if (g.json) return printJson({ ...out, ok: false, error: "missing_api_key" });
+        process.stdout.write(pc.yellow("• ") + "No API key. Run `modelbound auth login`.\n");
+        return;
       }
-      if (g.json) return printJson(out);
-      printSuccess(`API reachable at ${out.api_url}`);
+
+      try {
+        const client = createMcpClient({ profile, mcpUrl: g.mcpUrl });
+        await client.callTool("set_workspace_context", {
+          workspace_path: process.cwd(),
+          file_hints: [".modelbound", ".cursor/rules", ".kiro/skills", ".claude"],
+        });
+        out.mcp_reachable = true;
+      } catch (e) {
+        out.mcp_reachable = false;
+        out.mcp_error = (e as Error).message;
+        if (g.json) return printJson({ ...out, ok: false });
+        process.stdout.write(pc.red("✖ ") + `MCP unreachable: ${(e as Error).message}\n`);
+        return;
+      }
+
+      if (g.json) {
+        return printJson({ ...out, ok: true });
+      }
+      printSuccess(`MCP reachable at ${out.mcp_url}`);
+      await runAuthStatus(profile);
     });
 }

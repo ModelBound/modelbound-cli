@@ -45,7 +45,10 @@ function renderFindings(r: FindingsResponse, json?: boolean): void {
     return;
   }
   for (const f of findings) {
-    const sev = f.severity === "critical" ? pc.red(f.severity) : f.severity === "warning" ? pc.yellow(f.severity) : pc.dim(f.severity);
+    const sevLower = String(f.severity).toLowerCase();
+    const sev = sevLower === "critical" ? pc.red(f.severity)
+      : sevLower === "warning" || sevLower === "warn" ? pc.yellow(f.severity)
+      : pc.dim(f.severity);
     const ignored = f.ignored ? pc.dim(" [ignored]") : "";
     process.stdout.write(`  ${sev} ${f.class}: ${f.message}${ignored}\n`);
     process.stdout.write(pc.dim(`    key: ${f.key}\n`));
