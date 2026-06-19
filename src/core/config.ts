@@ -3,6 +3,7 @@ import Conf from "conf";
 export interface Profile {
   apiUrl?: string;
   apiKey?: string;
+  mcpUrl?: string;
   defaultIntensity?: "conservative" | "balanced" | "aggressive";
   autosync?: boolean;
   telemetry?: boolean;

@@ -6,6 +6,7 @@ import { Command } from "commander";
 export interface GlobalOpts {
   json?: boolean;
   apiUrl?: string;
+  mcpUrl?: string;
 }
 
 export function globalOpts(cmd: Command): GlobalOpts {

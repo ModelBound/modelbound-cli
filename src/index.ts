@@ -11,22 +11,33 @@ import { registerSync } from "./commands/sync.js";
 import { registerRepo } from "./commands/repo.js";
 import { registerConfig } from "./commands/config.js";
 import { registerMcp } from "./commands/mcp.js";
+import { registerContext } from "./commands/context.js";
+import { registerFindings } from "./commands/findings.js";
+import { registerBenchmark } from "./commands/benchmark.js";
+import { registerCompare } from "./commands/compare.js";
+import { registerSuggest } from "./commands/suggest.js";
 
 const program = new Command();
 
 program
   .name("modelbound")
   .description("ModelBound CLI — token optimization, skill pipeline, and version management")
-  .version("0.1.0")
+  .version("0.2.0")
   .option("--json", "machine-readable output (NDJSON for streams)")
   .option("--quiet", "suppress progress output")
   .option("--no-color", "disable ANSI color")
-  .option("--profile <name>", "named profile to use", "default");
+  .option("--profile <name>", "named profile to use", "default")
+  .option("--mcp-url <url>", "hosted MCP endpoint", process.env.MODELBOUND_MCP_URL);
 
 registerAuth(program);
+registerContext(program);
 registerOptimize(program);
 registerPipeline(program);
 registerTest(program);
+registerBenchmark(program);
+registerCompare(program);
+registerSuggest(program);
+registerFindings(program);
 registerVersion(program);
 registerBackup(program);
 registerSync(program);

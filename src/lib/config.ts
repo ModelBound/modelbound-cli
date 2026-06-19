@@ -10,6 +10,7 @@ const FILE = path.join(DIR, "config.json");
 
 export interface CliConfig {
   api_url?: string;
+  mcp_url?: string;
   token?: string;
   // Profile cache (populated after `mb login` or first authenticated call)
   user?: { id: string; email?: string; team_id?: string };
