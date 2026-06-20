@@ -10,8 +10,9 @@ export interface GlobalOpts {
 }
 
 export function globalOpts(cmd: Command): GlobalOpts {
-  // Commander stores options on the root program when defined there.
-  const root = cmd.parent ?? cmd;
+  // Walk up to the root program so global flags like --json are visible on subcommands.
+  let root: Command = cmd;
+  while (root.parent) root = root.parent;
   return root.opts() as GlobalOpts;
 }
 
