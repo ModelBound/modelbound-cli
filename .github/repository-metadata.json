@@ -1,0 +1,24 @@
+{
+  "description": "ModelBound CLI — token optimization, skill pipeline, version management, and cloud sync from your terminal or CI.",
+  "homepage": "https://www.npmjs.com/package/modelbound",
+  "topics": [
+    "ai",
+    "ai-agents",
+    "ai-tools",
+    "agent-skills",
+    "context-engineering",
+    "prompt-engineering",
+    "prompts",
+    "llm",
+    "generative-ai",
+    "artificial-intelligence",
+    "cli",
+    "devops",
+    "ci-cd",
+    "nodejs",
+    "mcp",
+    "token-optimization",
+    "agentic-workflow",
+    "npm-package"
+  ]
+}

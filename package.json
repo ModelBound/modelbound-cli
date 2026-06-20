@@ -50,10 +50,18 @@
   "homepage": "https://modelbound.co",
   "keywords": [
     "modelbound",
-    "ai",
-    "skills",
+    "cli",
+    "agent-skills",
+    "context-engineering",
+    "prompt-engineering",
     "token-optimization",
+    "skill-pipeline",
     "mcp",
-    "cli"
+    "model-context-protocol",
+    "ai-agents",
+    "devops",
+    "ci-cd",
+    "generative-ai",
+    "llm"
   ]
 }
