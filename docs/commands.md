@@ -45,7 +45,12 @@ modelbound pipeline run --skill ... --stage test_optimize
 Pre-pipeline checklist (automatic): `set_workspace_context` → `sync_skill_from_ide` → `run_skill_pipeline`.
 
 ## test
-- `modelbound test --skill <file|slug|uuid> [--case <id>] [--prompt "…"]`
+- `modelbound test run --skill <file|slug|uuid> [--case <id>] [--prompt "…"]`
+- `modelbound test create --skill <file|slug|uuid> --name "<name>" --prompt "<text>" [--notes "<text>"]`
+- `modelbound test list --skill <file|slug|uuid>`
+- `modelbound test seed --skill <file|slug|uuid> [--name ...] [--prompt ...] [--no-pipeline]`
+
+`test seed` creates a test case + runs `test_optimize` pipeline (body snapshot) for new skills.
 
 ## benchmark / compare / suggest
 - `modelbound benchmark --skill <file|slug|uuid>`
