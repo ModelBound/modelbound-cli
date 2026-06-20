@@ -1,0 +1,31 @@
+name: Sync repository metadata
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/repository-metadata.json
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  administration: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sync GitHub About section
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          DESC=$(jq -r '.description' .github/repository-metadata.json)
+          HOME=$(jq -r '.homepage' .github/repository-metadata.json)
+          gh repo edit "$GITHUB_REPOSITORY" --description "$DESC" --homepage "$HOME"
+          jq '{names: .topics}' .github/repository-metadata.json | \
+            gh api -X PUT "repos/$GITHUB_REPOSITORY/topics" \
+              -H "Accept: application/vnd.github.mercy-preview+json" \
+              --input -
