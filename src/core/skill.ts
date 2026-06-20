@@ -154,7 +154,7 @@ export async function ensureSkillSynced(
   throw new Error(`Could not resolve skill UUID for ${skill.label}. Run \`modelbound sync --file ${skill.relativePath}\`.`);
 }
 
-/** Resolve --skill target to a repo-linked UUID (syncs local files first). */
+/** Resolve --skill target to a repo-linked UUID. Local file paths always sync to avoid slug collisions. */
 export async function resolveSkillId(
   cwd: string,
   target: string | undefined,
@@ -163,7 +163,16 @@ export async function resolveSkillId(
   if (!target) throw new Error("--skill is required (file path, slug, or UUID).");
   const skill = resolveSkillFromPath(cwd, target);
   if (skill.skillId) return skill.skillId;
-  if (opts.sync !== false) return ensureSkillSynced(cwd, target, opts);
+
+  let hasLocalFile = false;
+  try {
+    await fs.access(skill.absolutePath);
+    hasLocalFile = !isUuid(target);
+  } catch { /* slug/remote target */ }
+
+  if (hasLocalFile || opts.sync) return ensureSkillSynced(cwd, target, opts);
+
+  await setWorkspaceContext(cwd, opts);
   const found = await callMcpTool(
     "get_skill",
     { skill_id: skill.slug },
@@ -172,7 +181,8 @@ export async function resolveSkillId(
   const id = (found as { skill_id?: string; id?: string })?.skill_id
     ?? (found as { skill_id?: string; id?: string })?.id;
   if (id) return id;
-  throw new Error(`Could not resolve skill: ${target}`);
+
+  throw new Error(`Could not resolve skill: ${target}. Run \`modelbound sync --file ${target}\`.`);
 }
 
 export { createMcpClient, callMcpTool };

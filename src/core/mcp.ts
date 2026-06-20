@@ -66,7 +66,10 @@ function parseToolResult(result: unknown): unknown {
   const text = r.content?.map((c) => c.text ?? "").join("\n").trim();
   const structured = r.structuredContent;
   const err = text ? extractMcpError(text, structured) : extractMcpError("", structured);
-  if (r.isError || err) throw new McpError(err ?? text ?? "MCP tool failed", structured ?? text);
+  if (r.isError || err) {
+    if (structured && typeof structured === "object") throw new McpError(err ?? text ?? "MCP tool failed", structured);
+    throw new McpError(err ?? text ?? "MCP tool failed", structured ?? text);
+  }
 
   if (structured !== undefined) return structured;
   if (text) {
