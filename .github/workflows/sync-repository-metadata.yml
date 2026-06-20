@@ -9,7 +9,6 @@ on:
 
 permissions:
   contents: read
-  administration: write
 
 jobs:
   sync:
@@ -19,7 +18,7 @@ jobs:
 
       - name: Sync GitHub About section
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.REPO_METADATA_TOKEN }}
         run: |
           set -euo pipefail
           DESC=$(jq -r '.description' .github/repository-metadata.json)
