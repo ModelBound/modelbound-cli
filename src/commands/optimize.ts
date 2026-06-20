@@ -4,6 +4,7 @@ import * as path from "node:path";
 import { api } from "../lib/api.js";
 import { globalOpts, printJson, printSuccess } from "../lib/render.js";
 import { backupFile } from "../core/backup.js";
+import { slugFromPath } from "../core/skill.js";
 
 export function registerOptimize(p: Command) {
   p.command("optimize <target>")
@@ -15,18 +16,20 @@ export function registerOptimize(p: Command) {
     .action(async (target: string, opts, cmd) => {
       const g = globalOpts(cmd);
       const isLocal = await isLocalPath(target);
+      const resolved = path.resolve(target);
 
       const body: Record<string, unknown> = {
         mode: opts.dryRun ? "dry_run" : "manual",
         intensity: opts.intensity,
       };
       if (isLocal) {
-        body.local_content = await fs.readFile(path.resolve(target), "utf8");
-        body.local_path = path.resolve(target);
+        body.local_content = await fs.readFile(resolved, "utf8");
+        body.path = path.relative(process.cwd(), resolved).replace(/\\/g, "/");
+        body.skill = slugFromPath(body.path as string);
       } else if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(target)) {
         body.skill_id = target;
       } else {
-        body.slug = target;
+        body.skill = target;
       }
 
       const r = await api<{

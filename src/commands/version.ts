@@ -2,6 +2,7 @@ import { Command } from "commander";
 import { callMcpTool, resolveSkillId } from "../core/skill.js";
 import { globalOpts, printJson } from "../lib/render.js";
 import { printSummary } from "../ui/summary.js";
+import { normalizeVersion } from "./compare.js";
 
 interface VersionRow {
   version?: string | number;
@@ -55,22 +56,29 @@ export function registerVersion(p: Command) {
     .description("Diff two versions of a skill")
     .requiredOption("--skill <target>", "skill file path, slug, or UUID")
     .requiredOption("--from <version>", "source version")
-    .option("--to <version>", "target version (live if omitted)")
+    .option("--to <version>", "target version (current if omitted)", "current")
     .action(async (opts, cmd) => {
       const g = globalOpts(cmd);
       const profile = p.opts().profile ?? "default";
       const mcpOpts = { profile, mcpUrl: g.mcpUrl };
       const skillId = await resolveSkillId(process.cwd(), opts.skill, mcpOpts);
-      const args: Record<string, string> = {
-        file_id: skillId,
-        skill_id: skillId,
-        from_version: opts.from,
-        mode: "diff",
-      };
-      if (opts.to) args.to_version = opts.to;
-      const r = await callMcpTool("get_file_variants", args, { profile, mcpUrl: g.mcpUrl, aliases: ["skill.diff"] });
+      const from = normalizeVersion(opts.from);
+      const to = normalizeVersion(opts.to ?? "current");
+      const r = await callMcpTool(
+        "compare_skill_versions",
+        {
+          skill_id: skillId,
+          from_version: from,
+          to_version: to,
+          version_a: from,
+          version_b: to,
+        },
+        { ...mcpOpts, aliases: ["skills.compareVersions"] },
+      );
       if (g.json) return printJson(r);
-      process.stdout.write(JSON.stringify(r, null, 2) + "\n");
+      const data = r as { diff?: string; stats?: unknown };
+      if (data.diff) process.stdout.write(data.diff + "\n");
+      else process.stdout.write(JSON.stringify(r, null, 2) + "\n");
     });
 
   v.command("restore")

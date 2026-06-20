@@ -2,6 +2,12 @@ import { Command } from "commander";
 import { callMcpTool, resolveSkillId } from "../core/skill.js";
 import { globalOpts, printJson } from "../lib/render.js";
 
+function normalizeVersion(label: string): string {
+  return String(label).replace(/^v/i, "");
+}
+
+export { normalizeVersion };
+
 export function registerCompare(p: Command) {
   p.command("compare")
     .description("Compare two skill versions")
@@ -12,14 +18,16 @@ export function registerCompare(p: Command) {
       const g = globalOpts(cmd);
       const profile = p.opts().profile ?? "default";
       const skillId = await resolveSkillId(process.cwd(), opts.skill, { profile, mcpUrl: g.mcpUrl });
+      const from = normalizeVersion(opts.from);
+      const to = normalizeVersion(opts.to);
       const r = await callMcpTool(
         "compare_skill_versions",
         {
           skill_id: skillId,
-          from_version: opts.from,
-          to_version: opts.to,
-          version_a: opts.from,
-          version_b: opts.to,
+          from_version: from,
+          to_version: to,
+          version_a: from,
+          version_b: to,
         },
         { profile, mcpUrl: g.mcpUrl, aliases: ["skills.compareVersions"] },
       );
