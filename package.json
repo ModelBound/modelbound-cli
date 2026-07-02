@@ -1,6 +1,6 @@
 {
   "name": "modelbound",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "ModelBound CLI — token optimization, skill pipeline, and version management from your terminal.",
   "license": "MIT",
   "type": "module",
@@ -18,7 +18,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json && chmod +x dist/index.js",
+    "build": "rm -rf dist && tsc -p tsconfig.json && chmod +x dist/index.js",
     "dev": "tsx src/index.ts",
     "lint": "eslint src --ext .ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",

@@ -24,7 +24,7 @@ const program = new Command();
 program
   .name("modelbound")
   .description("ModelBound CLI — token optimization, skill pipeline, and version management")
-  .version("0.3.0")
+  .version("0.3.2")
   .option("--json", "machine-readable output (NDJSON for streams)")
   .option("--quiet", "suppress progress output")
   .option("--no-color", "disable ANSI color")

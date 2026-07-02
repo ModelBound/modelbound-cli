@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.2 — 2026-07-02
+
+### Fixed
+- `modelbound pull` uses hosted MCP `get_skill` instead of removed `sync-cloud-pull` edge function (404)
+- `modelbound optimize` on local skill files no longer sends filesystem `path` to `cli-optimize` (fixes `target_not_found`)
+
+### Added
+- Unit tests for skill/MCP parsing helpers (`npm test`)
+- Integration harness under `scripts/integration/` (`npm run test:integration`)
+
 ## 0.2.0 — 2026-06-19
 
 ### Added (extension v1.9.16 / Test & Optimize parity)
