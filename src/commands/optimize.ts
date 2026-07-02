@@ -23,9 +23,10 @@ export function registerOptimize(p: Command) {
         intensity: opts.intensity,
       };
       if (isLocal) {
+        const rel = path.relative(process.cwd(), resolved).replace(/\\/g, "/");
         body.local_content = await fs.readFile(resolved, "utf8");
-        body.path = path.relative(process.cwd(), resolved).replace(/\\/g, "/");
-        body.skill = slugFromPath(body.path as string);
+        body.skill = slugFromPath(rel);
+        // Do not send `path` — cli-optimize resolves path as context_files title.
       } else if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(target)) {
         body.skill_id = target;
       } else {

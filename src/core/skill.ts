@@ -155,6 +155,83 @@ export async function ensureSkillSynced(
 }
 
 /** Resolve --skill target to a repo-linked UUID. Local file paths always sync to avoid slug collisions. */
+export interface PulledSkill {
+  content: string;
+  skillId: string;
+  slug: string | null;
+  sourcePath: string | null;
+}
+
+function isErrorSkillContent(content: string): boolean {
+  const normalized = content.trim().toLowerCase();
+  return (
+    /^skill not found\b/.test(normalized) ||
+    /^not found\b/.test(normalized) ||
+    /^error[:\s]/.test(normalized)
+  );
+}
+
+function parseSkillMcpPayload(data: unknown, skillId: string): PulledSkill | null {
+  if (!data) return null;
+
+  if (typeof data === "string") {
+    if (!data.trim() || isErrorSkillContent(data)) return null;
+    return { content: data, skillId, slug: null, sourcePath: null };
+  }
+
+  if (typeof data !== "object") return null;
+  const obj = data as Record<string, unknown>;
+  const nested = obj.skill && typeof obj.skill === "object"
+    ? (obj.skill as Record<string, unknown>)
+    : null;
+
+  const content =
+    (typeof obj.body_md === "string" ? obj.body_md : null) ??
+    (nested && typeof nested.body_md === "string" ? nested.body_md : null) ??
+    (typeof obj.body === "string" ? obj.body : null) ??
+    (typeof obj.text === "string" ? obj.text : null) ??
+    "";
+
+  if (!content.trim() || isErrorSkillContent(content)) return null;
+
+  return {
+    content,
+    skillId: String(obj.skill_id ?? obj.id ?? skillId),
+    slug: typeof obj.slug === "string" ? obj.slug : null,
+    sourcePath: typeof obj.source_path === "string" ? obj.source_path : null,
+  };
+}
+
+/** Fetch skill markdown from hosted MCP (replaces legacy sync-cloud-pull edge fn). */
+export async function pullSkillFromCloud(
+  skillIdOrSlug: string,
+  opts: McpClientOpts = {},
+): Promise<PulledSkill> {
+  const idArg = skillIdOrSlug;
+  const args = { skill_id: idArg, file_id: idArg };
+  const attempts: Array<() => Promise<unknown>> = [
+    () => callMcpTool("get_skill", args, { ...opts, aliases: ["skills.get"] }),
+    () => callMcpTool("modelbound.callTool", {
+      tool_name: "skills.get",
+      arguments: args,
+    }, opts),
+  ];
+
+  let lastErr: unknown;
+  for (const attempt of attempts) {
+    try {
+      const data = await attempt();
+      const parsed = parseSkillMcpPayload(data, idArg);
+      if (parsed) return parsed;
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+
+  if (lastErr instanceof Error) throw lastErr;
+  throw new Error(`Skill not found or empty (${skillIdOrSlug})`);
+}
+
 export async function resolveSkillId(
   cwd: string,
   target: string | undefined,
