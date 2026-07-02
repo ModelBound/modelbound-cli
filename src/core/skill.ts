@@ -162,7 +162,7 @@ export interface PulledSkill {
   sourcePath: string | null;
 }
 
-function isErrorSkillContent(content: string): boolean {
+export function isErrorSkillContent(content: string): boolean {
   const normalized = content.trim().toLowerCase();
   return (
     /^skill not found\b/.test(normalized) ||
@@ -171,7 +171,7 @@ function isErrorSkillContent(content: string): boolean {
   );
 }
 
-function parseSkillMcpPayload(data: unknown, skillId: string): PulledSkill | null {
+export function parseSkillMcpPayload(data: unknown, skillId: string): PulledSkill | null {
   if (!data) return null;
 
   if (typeof data === "string") {

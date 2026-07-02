@@ -56,7 +56,7 @@ export function extractMcpError(text: string, structured?: unknown): string | un
   return parts.length ? parts.join("\n") : undefined;
 }
 
-function parseToolResult(result: unknown): unknown {
+export function parseToolResult(result: unknown): unknown {
   if (!result || typeof result !== "object") return result;
   const r = result as {
     content?: Array<{ type?: string; text?: string }>;
