@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.3 — 2026-07-03
+
+### Added
+- `modelbound skills list` — list cloud-synced skills via MCP (`list_skills`)
+- `modelbound skill` command group wired into the main CLI entrypoint (`test`, `benchmark`, `versions`, `restore`, `diff`)
+
 ## 0.3.2 — 2026-07-02
 
 ### Fixed

@@ -1,11 +1,75 @@
-// `mb skill {test,benchmark,versions,restore,diff}` — version + eval ops.
-// Mirrors the cloud `skill.*` MCP tools.
+// `mb skills list` + `mb skill {test,benchmark,versions,restore,diff}` — cloud skill ops.
 import { Command } from "commander";
 import ora from "ora";
+import pc from "picocolors";
+import { callMcpTool } from "../core/mcp.js";
 import { api } from "../lib/api.js";
 import { globalOpts, printJson, printSuccess } from "../lib/render.js";
 
+export interface CloudSkillRow {
+  id: string;
+  name: string;
+  description?: string;
+  repo?: string | null;
+  source_path?: string | null;
+  version?: number;
+  updated_at?: string;
+  ai_type?: string;
+  source_platform?: string;
+}
+
+export interface SkillsListResponse {
+  skills?: CloudSkillRow[];
+  workspace_repo?: string | null;
+  scope_note?: string | null;
+}
+
+export function renderSkillsList(r: SkillsListResponse, json?: boolean): void {
+  if (json) return printJson(r);
+  const rows = r.skills ?? [];
+  if (r.scope_note) process.stdout.write(pc.dim(`${r.scope_note}\n`));
+  if (!rows.length) {
+    process.stdout.write(pc.yellow("• ") + "No skills found. Sync a file with `modelbound sync` or create one in the web app.\n");
+    return;
+  }
+  for (const s of rows) {
+    const slug = s.name;
+    const repo = s.repo ?? "—";
+    const path = s.source_path ?? "—";
+    process.stdout.write(
+      pc.bold(slug) +
+        pc.dim(`  ${s.id.slice(0, 8)}…  repo ${repo}  ${path}`) +
+        "\n",
+    );
+    if (s.description) process.stdout.write(pc.dim(`    ${s.description.slice(0, 120)}${s.description.length > 120 ? "…" : ""}\n`));
+  }
+}
+
 export function registerSkill(program: Command): void {
+  const skills = program.command("skills").description("Cloud skill library operations.");
+
+  skills
+    .command("list")
+    .description("List skills synced to your team (cloud library)")
+    .option("--repo <name>", "filter by GitHub repo (owner/name)")
+    .option("--cross-repo", "include skills from all repos, not just the active workspace")
+    .option("--query <q>", "search name or description")
+    .option("--limit <n>", "max results", "50")
+    .action(async (opts: { repo?: string; crossRepo?: boolean; query?: string; limit: string }, cmd: Command) => {
+      const g = globalOpts(cmd);
+      const profile = program.opts().profile ?? "default";
+      const args: Record<string, unknown> = { limit: Number(opts.limit) || 50 };
+      if (opts.repo) args.repo = opts.repo;
+      if (opts.crossRepo) args.cross_repo = true;
+      if (opts.query) args.query = opts.query;
+      const r = await callMcpTool(
+        "list_skills",
+        args,
+        { profile, mcpUrl: g.mcpUrl, aliases: ["skills.list"] },
+      ) as SkillsListResponse;
+      renderSkillsList(r, g.json);
+    });
+
   const skill = program.command("skill").description("Skill version + evaluation operations.");
 
   skill
