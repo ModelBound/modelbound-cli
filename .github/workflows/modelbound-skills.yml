@@ -1,0 +1,22 @@
+name: ModelBound Skill Check
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  skill-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: ModelBound/skill-check-action@v1
+        with:
+          mode: full
+        env:
+          MODELBOUND_API_KEY: ${{ secrets.MODELBOUND_API_KEY }}
