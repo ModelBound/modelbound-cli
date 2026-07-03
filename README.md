@@ -2,9 +2,9 @@
 
 > The ModelBound CLI — token optimization, skill pipeline, and version management from your terminal.
 
-[![ModelBound Skill Trust](https://modelbound.co/api/badge/skills.svg?repo=ModelBound/modelbound-cli)](https://modelbound.co/connect/github-actions)
-![Skill Lint](https://modelbound.co/api/badge/skills.svg?repo=ModelBound/modelbound-cli&metric=lint)
-![Optimize Savings](https://modelbound.co/api/badge/skills.svg?repo=ModelBound/modelbound-cli&metric=optimize)
+[![ModelBound Skill Trust](https://modelbound.co/api/badge/skills.svg?repo=ModelBound/modelbound-cli)](https://modelbound.co/connect/github-actions?repo=ModelBound/modelbound-cli)
+[![Skill Lint](https://modelbound.co/api/badge/skills.svg?repo=ModelBound/modelbound-cli&metric=lint)](https://modelbound.co/connect/github-actions?repo=ModelBound/modelbound-cli)
+[![Optimize Savings](https://modelbound.co/api/badge/skills.svg?repo=ModelBound/modelbound-cli&metric=optimize)](https://modelbound.co/connect/github-actions?repo=ModelBound/modelbound-cli)
 
 `modelbound` lets AI engineers run the same optimization and Skill Development Pipeline that powers the ModelBound web app — directly from their shell, CI, or git hooks. No web UI required.
 
