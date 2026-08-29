@@ -1,6 +1,7 @@
 import { Command } from "commander";
 import { promises as fs } from "node:fs";
 import * as path from "node:path";
+import { registerRepoLocal } from "./repoLocal.js";
 
 export function registerRepo(p: Command) {
   p.command("detect").description("Detect IDE layouts in the current repo").action(async () => {
@@ -45,4 +46,6 @@ export function registerRepo(p: Command) {
     if (!/description\s*:/.test(m![1])) { process.stdout.write("✖ frontmatter missing description\n"); process.exit(1); }
     process.stdout.write("✓ valid\n");
   });
+
+  registerRepoLocal(p);
 }
