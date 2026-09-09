@@ -26,6 +26,7 @@
     "test:integration": "node scripts/integration/run-all.mjs",
     "test:integration:sync": "node scripts/integration/run-skill-sync-tests.mjs",
     "test:integration:matrix": "node scripts/integration/run-cli-matrix.mjs",
+    "test:e2e": "npm run build && node scripts/integration/run-repo-local-e2e.mjs",
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
