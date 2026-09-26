@@ -69,3 +69,29 @@ Categories: `ignored_rule, out_of_scope, wrong_tool, hallucinated, wrong_format,
 Repeated failures with the same category are grouped in ModelBound, diagnosed,
 and turned into a proposed minimal edit plus a regression test you accept or
 reject at <https://modelbound.co/skills/attention>.
+
+## The agent harness
+
+An agent can be left alone with a task when four things hold: context, permissions, guardrails, verification.
+Stage 2 of the pipeline checks all four deterministically — no model call.
+
+```bash
+mb harness write-migration          # summary, exits non-zero on a failing gate
+mb harness write-migration --strict # cautions fail too
+mb harness write-migration --json   # for CI
+```
+
+The same result appears inside `mb pipeline` and `mb audit` output. Presets for
+the three common postures live in `presets/harness.json`.
+
+## Tracing a run
+
+Record any command as a traced run for a skill. Only the command name,
+duration and exit status are sent, never output.
+
+```bash
+mb trace --skill deploy-checklist -- npm run deploy
+mb trace --skill deploy-checklist --version 1.4.0 --category wrong_tool -- ./run-agent.sh
+```
+
+Failed runs become outcome reports on the skill. See `docs/TRACING.md`.
