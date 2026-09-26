@@ -1,0 +1,69 @@
+{
+  "$schema": "https://modelbound.co/schemas/harness-presets.json",
+  "description": "Agent harness presets. Merge one into a skill's pipeline_config (mb pipeline --config) or an agent card to set gates, approvals and budgets in one step.",
+  "presets": {
+    "cautious": {
+      "label": "Cautious",
+      "summary": "Every write tool needs approval, tight budgets, all gates enforced.",
+      "pipeline_config": {
+        "enforce_trust": true,
+        "min_trust": 75,
+        "enforce_latency": true,
+        "max_latency_ms": 2500,
+        "enforce_tests": true,
+        "enforce_safety": true,
+        "min_reliability": 0.8,
+        "max_body_tokens": 6000,
+        "block_publish_on_failure": true
+      },
+      "agent": {
+        "require_approval_for_writes": true,
+        "max_tool_calls": 10,
+        "max_cost_usd": 1,
+        "halt_on_tool_error": true
+      }
+    },
+    "balanced": {
+      "label": "Balanced",
+      "summary": "Reads run freely, writes still ask. Sensible budgets and enforced gates.",
+      "pipeline_config": {
+        "enforce_trust": true,
+        "min_trust": 60,
+        "enforce_latency": false,
+        "max_latency_ms": 4000,
+        "enforce_tests": true,
+        "enforce_safety": true,
+        "min_reliability": 0.6,
+        "max_body_tokens": 8000,
+        "block_publish_on_failure": true
+      },
+      "agent": {
+        "require_approval_for_writes": true,
+        "max_tool_calls": 25,
+        "max_cost_usd": 5,
+        "halt_on_tool_error": false
+      }
+    },
+    "autonomous": {
+      "label": "Autonomous",
+      "summary": "For skills with a proven track record: strict budgets, gates and evals required.",
+      "pipeline_config": {
+        "enforce_trust": true,
+        "min_trust": 80,
+        "enforce_latency": true,
+        "max_latency_ms": 3000,
+        "enforce_tests": true,
+        "enforce_safety": true,
+        "min_reliability": 0.85,
+        "max_body_tokens": 8000,
+        "block_publish_on_failure": true
+      },
+      "agent": {
+        "require_approval_for_writes": true,
+        "max_tool_calls": 50,
+        "max_cost_usd": 10,
+        "halt_on_tool_error": false
+      }
+    }
+  }
+}
