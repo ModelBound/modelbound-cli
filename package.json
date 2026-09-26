@@ -1,6 +1,6 @@
 {
   "name": "modelbound",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "description": "ModelBound CLI — token optimization, skill pipeline, and version management from your terminal.",
   "license": "MIT",
   "type": "module",
@@ -27,12 +27,14 @@
     "test:integration:sync": "node scripts/integration/run-skill-sync-tests.mjs",
     "test:integration:matrix": "node scripts/integration/run-cli-matrix.mjs",
     "test:e2e": "npm run build && node scripts/integration/run-repo-local-e2e.mjs",
+    "test:e2e:full": "npm run build && node scripts/integration/run-cli-e2e.mjs",
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
     "commander": "^15.0.0",
     "conf": "^15.1.0",
     "gray-matter": "^4.0.3",
+    "chalk": "^5.3.0",
     "ink": "^5.0.1",
     "open": "^11.0.0",
     "ora": "^9.4.0",
