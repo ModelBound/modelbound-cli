@@ -7,6 +7,8 @@ import { registerPipeline } from "./commands/pipeline.js";
 import { registerSkill } from "./commands/skill.js";
 import { registerHealth } from "./commands/health.js";
 import { registerOutcome } from "./commands/outcome.js";
+import { registerHarness } from "./commands/harness.js";
+import { registerTrace } from "./commands/trace.js";
 
 const program = new Command();
 
@@ -27,6 +29,8 @@ registerPipeline(program);
 registerSkill(program);
 registerHealth(program);
 registerOutcome(program);
+registerHarness(program);
+registerTrace(program);
 
 program.parseAsync(process.argv).catch((err: Error) => {
   // eslint-disable-next-line no-console
