@@ -84,6 +84,28 @@ mb harness write-migration --json   # for CI
 The same result appears inside `mb pipeline` and `mb audit` output. Presets for
 the three common postures live in `presets/harness.json`.
 
+## Use in CI
+
+Run the same checks on every pull request. Add `MODELBOUND_API_KEY` as a repository secret, then:
+
+```yaml
+# .github/workflows/modelbound.yml
+name: ModelBound
+on: [pull_request]
+jobs:
+  skills:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npx -y modelbound pipeline run --skill code-review
+        env:
+          MODELBOUND_API_KEY: ${{ secrets.MODELBOUND_API_KEY }}
+```
+
+Commands exit non-zero when a check fails, so the job blocks the merge. Prefer a ready-made action? Use [`ModelBound/skill-check-action`](https://github.com/ModelBound/skill-check-action).
+
 ## Tracing a run
 
 Record any command as a traced run for a skill. Only the command name,
