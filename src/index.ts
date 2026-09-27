@@ -20,13 +20,15 @@ import { registerEval } from "./commands/eval.js";
 import { registerHealth } from "./commands/health.js";
 import { registerSkill } from "./commands/skill.js";
 import { registerOutcome } from "./commands/outcome.js";
+import { registerHarness } from "./commands/harness.js";
+import { registerTrace } from "./commands/trace.js";
 
 const program = new Command();
 
 program
   .name("modelbound")
   .description("ModelBound CLI — token optimization, skill pipeline, and version management")
-  .version("0.3.5")
+  .version("0.3.6")
   .option("--json", "machine-readable output (NDJSON for streams)")
   .option("--quiet", "suppress progress output")
   .option("--no-color", "disable ANSI color")
@@ -52,6 +54,8 @@ registerMcp(program);
 registerHealth(program);
 registerSkill(program);
 registerOutcome(program);
+registerHarness(program);
+registerTrace(program);
 
 // Top-level auth aliases (extension parity)
 program

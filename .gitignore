@@ -9,3 +9,4 @@ coverage
 scripts/integration/workspace/
 scripts/integration/workspace-alt/
 scripts/integration/.harness-state.json
+scripts/integration/.cli-e2e-state.json

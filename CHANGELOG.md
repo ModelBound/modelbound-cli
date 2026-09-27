@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.6 — 2026-09-26
+
+### Fixed
+- Register `trace` and `harness` on the published `modelbound` / `mb` entrypoint (`dist/index.js`)
+
+### Added
+- `scripts/integration/run-cli-e2e.mjs` — full offline + optional cloud E2E harness (`npm run test:e2e:full`)
+
 ## 0.3.3 — 2026-07-03
 
 ### Added
