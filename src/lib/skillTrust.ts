@@ -1,4 +1,4 @@
-// Pure, deterministic heuristics for Skill Trust Score (no AI dependency).
+// Pure, deterministic skill checks (no AI dependency).
 // Scanner version "h5". Bump when rules change so we can re-score in bulk.
 
 import { hasTaskScopeConstraint } from "./taskBudgets.js";
