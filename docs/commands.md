@@ -21,7 +21,7 @@ Sets workspace scoping (`set_workspace_context`) before skill operations. Repo i
 
 `sync --file` calls `sync_skill_from_ide` and returns a repo-linked skill UUID.
 
-## findings (Trust & Safety)
+## findings (safety & quality)
 - `modelbound findings list --skill <file|slug|uuid>`
 - `modelbound findings ignore --skill ... --key "<stable key>"`
 - `modelbound findings unignore --skill ... --key "<stable key>"`

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Offline E2E for local anti-slop CLI commands (init, new, trust, review).
+ * Offline E2E for local anti-slop CLI commands (init, new, checks, review).
  * Usage: npm run build && node scripts/integration/run-repo-local-e2e.mjs
  */
 import fs from "node:fs";
@@ -78,11 +78,11 @@ function main() {
       }
     }
 
-    r = run(["trust", skillRel], fixtureDir);
+    r = run(["checks", skillRel], fixtureDir);
     if (r.status !== 0 || !r.stdout.includes("h5")) {
-      fail("trust", r.stderr || r.stdout);
+      fail("checks", r.stderr || r.stdout);
     } else {
-      ok("trust (h5)");
+      ok("checks (h5)");
     }
 
     r = run(["review", "request", skillRel], fixtureDir);

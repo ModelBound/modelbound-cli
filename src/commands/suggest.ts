@@ -4,7 +4,7 @@ import { globalOpts, printJson } from "../lib/render.js";
 
 export function registerSuggest(p: Command) {
   p.command("suggest")
-    .description("Suggest skill improvements from trust & quality analysis")
+    .description("Suggest skill improvements from findings, tests and real-world outcomes")
     .requiredOption("--skill <target>", "skill file path, slug, or UUID")
     .action(async (opts, cmd) => {
       const g = globalOpts(cmd);

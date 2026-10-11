@@ -4,7 +4,7 @@ import * as path from "node:path";
 import { writeScaffoldedSkill } from "../lib/skillScaffold.js";
 import { buildServedSkillPayload, parseSkillForTrust } from "../lib/skillPayload.js";
 import { applyReviewToFile, ciBlocksMerge, hashBody, readSkillParts, type ReviewState } from "../lib/skillReview.js";
-import { SCANNER_VERSION } from "../lib/skillTrust.js";
+import { SCANNER_VERSION, checksOf } from "../lib/skillTrust.js";
 import { summarizeConfidence, readRuns } from "../lib/confidenceHistory.js";
 
 async function readFile(p: string): Promise<string> {
@@ -58,22 +58,23 @@ export function registerRepoLocal(p: Command): void {
       process.stdout.write(`✓ created ${rel}\n`);
     });
 
-  p.command("trust <path>")
-    .description("Print trust score + confidence trend for a local skill")
+  p.command("checks <path>")
+    .description("Show pass / warn / fail checks + confidence trend for a local skill")
     .action(async (filePath: string) => {
       const cwd = process.cwd();
       const raw = await readFile(path.resolve(cwd, filePath));
       const payload = buildServedSkillPayload(cwd, filePath, raw);
-      process.stdout.write(`trust_score: ${payload.trust_score} (${payload.scanner_version})\n`);
+      const c = payload.checks;
+      process.stdout.write(`checks: ${c.status} — ${c.critical} blocking, ${c.warnings} warnings (${payload.scanner_version})\n`);
       process.stdout.write(`review_state: ${payload.review_state}\n`);
-      if (payload.confidence.latest_trust != null) {
+      if (payload.confidence.latest_issues != null) {
         const arrow =
           payload.confidence.trend === "up" ? "↑" : payload.confidence.trend === "down" ? "↓" : "→";
         process.stdout.write(
-          `confidence: pass_rate=${payload.confidence.pass_rate ?? "n/a"}% trust=${payload.confidence.latest_trust} ${arrow}\n`,
+          `confidence: pass_rate=${payload.confidence.pass_rate ?? "n/a"}% open_issues=${payload.confidence.latest_issues} ${arrow}\n`,
         );
       }
-      for (const f of payload.trust.findings) {
+      for (const f of payload.findings) {
         process.stdout.write(`• [${f.severity}] ${f.message}\n`);
       }
     });
@@ -93,7 +94,7 @@ export function registerRepoLocal(p: Command): void {
 
   review
     .command("approve <path>")
-    .description("Approve skill (stores body hash + trust score)")
+    .description("Approve skill (stores body hash + check status)")
     .option("--by <name>", "reviewer id")
     .option("--notes <text>", "review notes")
     .action(async (filePath: string, opts: { by?: string; notes?: string }) => {
@@ -106,12 +107,12 @@ export function registerRepoLocal(p: Command): void {
         reviewed_by: opts.by ?? process.env.USER ?? "local",
         reviewed_at: new Date().toISOString(),
         approved_hash: hashBody(parts.body),
-        approved_trust: trust.total,
+        approved_checks: checksOf(trust).status,
         scanner_version: SCANNER_VERSION,
         notes: opts.notes,
       });
       await writeFile(abs, next);
-      process.stdout.write(`✓ approved ${filePath} (trust ${trust.total})\n`);
+      process.stdout.write(`✓ approved ${filePath} (checks ${checksOf(trust).status})\n`);
     });
 
   review
@@ -134,7 +135,7 @@ export function registerRepoLocal(p: Command): void {
 
   review
     .command("status <path>")
-    .description("Show review_state, review_meta, trust, confidence")
+    .description("Show review_state, review_meta, checks, confidence")
     .action(async (filePath: string) => {
       const cwd = process.cwd();
       const raw = await readFile(path.resolve(cwd, filePath));

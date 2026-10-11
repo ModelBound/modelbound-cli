@@ -1,5 +1,14 @@
 # Changelog
 
+
+## 0.4.0 — 2026-10-11
+
+### Breaking
+- Removed the numeric 0–100 trust score. `mb trust` is now `mb checks` and prints pass / warn / fail with blocking and warning counts.
+- `mb findings list` lists findings only (no scores).
+- `mb pipeline config` drops `--min-trust` / `--enforce-trust`. Publishing is blocked by failing tests, blocking findings, or latency only.
+- Review approval stores `approved_checks` instead of `approved_trust`; local confidence history tracks open-issue counts.
+
 ## 0.3.6 — 2026-09-26
 
 ### Fixed
