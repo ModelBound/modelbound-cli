@@ -1,18 +1,18 @@
 import matter from "gray-matter";
 import { summarizeConfidence, readRuns, type ConfidenceSummary } from "./confidenceHistory.js";
 import { buildReviewMeta, readSkillParts, type ReviewMeta } from "./skillReview.js";
-import { scoreSkillTrust, SCANNER_VERSION, type TrustResult } from "./skillTrust.js";
+import { checksOf, scoreSkillTrust, SCANNER_VERSION, type ChecksSummary, type Finding, type TrustResult } from "./skillTrust.js";
 
 export interface ServedSkillPayload {
   path: string;
   contents: string;
   version: string | null;
-  trust_score: number;
+  checks: ChecksSummary;
   scanner_version: string;
   review_state: string;
   review_meta: ReviewMeta | null;
   confidence: ConfidenceSummary;
-  trust: TrustResult;
+  findings: Finding[];
 }
 
 function allowedTools(data: Record<string, unknown>): string[] {
@@ -43,12 +43,12 @@ export function buildServedSkillPayload(
     path: relPath,
     contents: raw,
     version,
-    trust_score: trust.total,
+    checks: checksOf(trust),
     scanner_version: trust.scanner_version ?? SCANNER_VERSION,
     review_state,
     review_meta,
     confidence,
-    trust,
+    findings: trust.findings,
   };
 }
 

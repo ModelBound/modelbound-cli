@@ -23,7 +23,7 @@ export function registerPipeline(p: Command) {
     .option("--stage <name>", "full | test_optimize | production", "full")
     .option("--targets <list>", "comma-separated targets", "save,marketplace,claude_export")
     .option("--bump <kind>", "version bump: patch|minor|major|none", "patch")
-    .option("--override-gate", "bypass trust/latency/test gates", false)
+    .option("--override-gate", "bypass readiness/latency/test gates", false)
     .option("--changelog <text>", "changelog entry")
     .option("--repo <name>", "org/repo override")
     .option("--no-watch", "do not poll stage progress")
@@ -100,10 +100,7 @@ export function registerPipeline(p: Command) {
   pipe.command("config")
     .description("Read or update pipeline gate configuration for a skill")
     .requiredOption("--skill <target>", "skill file path, slug, or UUID")
-    .option("--min-trust <n>", "minimum trust score 0-100", parseFloat)
     .option("--max-latency <ms>", "max latency budget in ms", parseFloat)
-    .option("--enforce-trust", "enforce trust gate")
-    .option("--no-enforce-trust", "disable trust gate")
     .option("--enforce-latency", "enforce latency gate")
     .option("--no-enforce-latency", "disable latency gate")
     .option("--enforce-tests", "enforce saved test cases gate")
@@ -118,10 +115,7 @@ export function registerPipeline(p: Command) {
       const skillId = await ensureSkillSynced(process.cwd(), opts.skill, mcpOpts);
 
       const args: Record<string, unknown> = { skill_id: skillId };
-      if (opts.minTrust != null) args.min_trust_score = opts.minTrust;
       if (opts.maxLatency != null) args.max_latency_ms = opts.maxLatency;
-      if (opts.enforceTrust) args.enforce_trust_gate = true;
-      if (opts.noEnforceTrust) args.enforce_trust_gate = false;
       if (opts.enforceLatency) args.enforce_latency_gate = true;
       if (opts.noEnforceLatency) args.enforce_latency_gate = false;
       if (opts.enforceTests) args.enforce_tests_gate = true;

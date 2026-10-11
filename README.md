@@ -27,7 +27,7 @@ The CLI is the same surface you'd get from the MCP server (`modelbound-mcp`) and
 | `mb optimize <file\|skill>` | Run token optimization. `--apply` saves a new version. |
 | `mb suggestions [--file id]` | List pending optimization suggestions. |
 | `mb apply <suggestion-id...>` | Apply suggestions. |
-| `mb pipeline run <skill>` | Run lint → trust → test → benchmark → optimize. |
+| `mb pipeline run <skill>` | Run lint → checks → test → benchmark → optimize. |
 | `mb pipeline status <run-id>` | Poll a pipeline run. |
 | `mb skill test <skill>` | Run the test suite. |
 | `mb skill benchmark <skill> --a <ver> --b <ver>` | Head-to-head benchmark. |

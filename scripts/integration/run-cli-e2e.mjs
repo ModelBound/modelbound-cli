@@ -152,7 +152,7 @@ Follow project conventions.
 
     expectOk("lint skill", runCli(["lint", skillRel], fixture));
     expectOk("validate skill", runCli(["validate", skillRel], fixture), (o) => o.includes("valid"));
-    expectOk("trust h5", runCli(["trust", skillRel], fixture), (o) => o.includes("h5"));
+    expectOk("checks h5", runCli(["checks", skillRel], fixture), (o) => o.includes("h5"));
 
     expectOk("review request", runCli(["review", "request", skillRel], fixture));
     expectOk("review approve", runCli(["review", "approve", skillRel, "--by", "e2e"], fixture));

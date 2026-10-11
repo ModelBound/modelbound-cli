@@ -3,7 +3,8 @@ import path from "node:path";
 
 export interface ConfidenceRun {
   ts: string;
-  trust: number;
+  /** open issues (critical + warn) at this run */
+  issues: number;
   tests_passed: number;
   tests_total: number;
   scanner_version: string;
@@ -11,8 +12,8 @@ export interface ConfidenceRun {
 
 export interface ConfidenceSummary {
   pass_rate: number | null;
-  latest_trust: number | null;
-  trust_delta: number | null;
+  latest_issues: number | null;
+  issues_delta: number | null;
   trend: "up" | "down" | "flat" | "unknown";
   runs: number;
 }
@@ -42,23 +43,24 @@ export function readRuns(cwd: string, skillRelPath: string): ConfidenceRun[] {
 
 export function summarizeConfidence(runs: ConfidenceRun[]): ConfidenceSummary {
   if (!runs.length) {
-    return { pass_rate: null, latest_trust: null, trust_delta: null, trend: "unknown", runs: 0 };
+    return { pass_rate: null, latest_issues: null, issues_delta: null, trend: "unknown", runs: 0 };
   }
   const latest = runs[runs.length - 1];
   const prev = runs.length > 1 ? runs[runs.length - 2] : null;
   const pass_rate =
     latest.tests_total > 0 ? Math.round((latest.tests_passed / latest.tests_total) * 100) : null;
-  const trust_delta = prev ? latest.trust - prev.trust : null;
+  const issues_delta = prev ? latest.issues - prev.issues : null;
   let trend: ConfidenceSummary["trend"] = "unknown";
-  if (trust_delta !== null) {
-    if (trust_delta > 0) trend = "up";
-    else if (trust_delta < 0) trend = "down";
+  if (issues_delta !== null) {
+    // fewer issues = improving
+    if (issues_delta < 0) trend = "up";
+    else if (issues_delta > 0) trend = "down";
     else trend = "flat";
   }
   return {
     pass_rate,
-    latest_trust: latest.trust,
-    trust_delta,
+    latest_issues: latest.issues,
+    issues_delta,
     trend,
     runs: runs.length,
   };

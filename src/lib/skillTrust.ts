@@ -374,3 +374,19 @@ export function trustTier(total: number): "green" | "amber" | "red" {
   if (total >= 60) return "amber";
   return "red";
 }
+
+export interface ChecksSummary {
+  status: "pass" | "warn" | "fail";
+  critical: number;
+  warnings: number;
+  info: number;
+}
+
+/** Pass / warn / fail from findings. No numeric score is ever exposed. */
+export function checksOf(result: Pick<TrustResult, "findings"> | Finding[]): ChecksSummary {
+  const findings = Array.isArray(result) ? result : result.findings;
+  const critical = findings.filter((f) => f.severity === "critical").length;
+  const warnings = findings.filter((f) => f.severity === "warn").length;
+  const info = findings.length - critical - warnings;
+  return { status: critical ? "fail" : warnings ? "warn" : "pass", critical, warnings, info };
+}

@@ -14,14 +14,7 @@ interface Finding {
 
 interface FindingsResponse {
   skill_id: string;
-  scores?: {
-    total?: number;
-    clarity?: number;
-    safety?: number;
-    fit?: number;
-    ai_fit_score?: number;
-    ai_fit_reason?: string;
-  };
+  fit_reason?: string | null;
   findings?: Finding[];
   ignored_keys?: string[];
   scanner_version?: string;
@@ -30,15 +23,7 @@ interface FindingsResponse {
 
 function renderFindings(r: FindingsResponse, json?: boolean): void {
   if (json) return printJson(r);
-  const scores = r.scores;
-  if (scores) {
-    process.stdout.write(
-      pc.bold(`Trust score: ${scores.total ?? "—"}/100`) +
-        pc.dim(` · clarity ${scores.clarity ?? "—"} · safety ${scores.safety ?? "—"} · fit ${scores.fit ?? "—"}`) +
-        "\n",
-    );
-    if (scores.ai_fit_reason) process.stdout.write(pc.dim(`AI fit: ${scores.ai_fit_reason}\n`));
-  }
+  if (r.fit_reason) process.stdout.write(pc.dim(`Description match: ${r.fit_reason}\n`));
   const findings = r.findings ?? [];
   if (!findings.length) {
     process.stdout.write(pc.green("✓ ") + "No findings\n");
@@ -56,10 +41,10 @@ function renderFindings(r: FindingsResponse, json?: boolean): void {
 }
 
 export function registerFindings(p: Command) {
-  const f = p.command("findings").description("Trust & Safety findings for skills");
+  const f = p.command("findings").description("Safety and quality findings for skills");
 
   f.command("list")
-    .description("List trust findings and scores for a skill")
+    .description("List safety and quality findings for a skill")
     .requiredOption("--skill <target>", "skill file path, slug, or UUID")
     .action(async (opts, cmd) => {
       const g = globalOpts(cmd);
@@ -74,7 +59,7 @@ export function registerFindings(p: Command) {
     });
 
   f.command("ignore")
-    .description("Ignore a trust finding by stable key")
+    .description("Ignore a finding by stable key")
     .requiredOption("--skill <target>", "skill file path, slug, or UUID")
     .option("--key <key>", "finding key from list output")
     .option("--class <class>", "finding class (if key omitted)")

@@ -6,8 +6,6 @@
       "label": "Cautious",
       "summary": "Every write tool needs approval, tight budgets, all gates enforced.",
       "pipeline_config": {
-        "enforce_trust": true,
-        "min_trust": 75,
         "enforce_latency": true,
         "max_latency_ms": 2500,
         "enforce_tests": true,
@@ -27,8 +25,6 @@
       "label": "Balanced",
       "summary": "Reads run freely, writes still ask. Sensible budgets and enforced gates.",
       "pipeline_config": {
-        "enforce_trust": true,
-        "min_trust": 60,
         "enforce_latency": false,
         "max_latency_ms": 4000,
         "enforce_tests": true,
@@ -48,8 +44,6 @@
       "label": "Autonomous",
       "summary": "For skills with a proven track record: strict budgets, gates and evals required.",
       "pipeline_config": {
-        "enforce_trust": true,
-        "min_trust": 80,
         "enforce_latency": true,
         "max_latency_ms": 3000,
         "enforce_tests": true,

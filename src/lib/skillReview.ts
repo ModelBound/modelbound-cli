@@ -9,7 +9,7 @@ export interface ReviewRecord {
   reviewed_by?: string;
   reviewed_at?: string;
   approved_hash?: string;
-  approved_trust?: number;
+  approved_checks?: "pass" | "warn" | "fail";
   scanner_version?: string;
   notes?: string;
 }
@@ -18,7 +18,7 @@ export interface ReviewMeta {
   reviewed_by?: string;
   reviewed_at?: string;
   approved_hash?: string;
-  approved_trust?: number;
+  approved_checks?: "pass" | "warn" | "fail";
   scanner_version?: string;
   notes?: string;
 }
@@ -39,7 +39,10 @@ export function parseReview(data: Record<string, unknown>): ReviewRecord | null 
     reviewed_by: typeof r.reviewed_by === "string" ? r.reviewed_by : undefined,
     reviewed_at: typeof r.reviewed_at === "string" ? r.reviewed_at : undefined,
     approved_hash: typeof r.approved_hash === "string" ? r.approved_hash : undefined,
-    approved_trust: typeof r.approved_trust === "number" ? r.approved_trust : undefined,
+    approved_checks:
+      r.approved_checks === "pass" || r.approved_checks === "warn" || r.approved_checks === "fail"
+        ? r.approved_checks
+        : undefined,
     scanner_version: typeof r.scanner_version === "string" ? r.scanner_version : undefined,
     notes: typeof r.notes === "string" ? r.notes : undefined,
   };
@@ -62,7 +65,7 @@ export function buildReviewMeta(review: ReviewRecord | null, body: string): Revi
       reviewed_by: review.reviewed_by,
       reviewed_at: review.reviewed_at,
       approved_hash: review.approved_hash,
-      approved_trust: review.approved_trust,
+      approved_checks: review.approved_checks,
       scanner_version: review.scanner_version ?? SCANNER_VERSION,
       notes: review.notes ?? "Body modified since approval — reset to draft.",
     };
@@ -72,7 +75,7 @@ export function buildReviewMeta(review: ReviewRecord | null, body: string): Revi
       reviewed_by: review.reviewed_by,
       reviewed_at: review.reviewed_at,
       approved_hash: review.approved_hash,
-      approved_trust: review.approved_trust,
+      approved_checks: review.approved_checks,
       scanner_version: review.scanner_version ?? SCANNER_VERSION,
       notes: review.notes,
     };
