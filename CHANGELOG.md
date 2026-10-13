@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.0 — 2026-10-13
+
+### Added
+- `mb check [paths]`: Flight Check offline safety scan (prompt injection, exfiltration, secrets, destructive commands, wildcard tools, loop hazards, clarity, token budget). No account or AI cost; exits 1 on blocking findings; `--strict` and `--json` supported.
+- Help text now leads with `mb check` and `mb auth login`.
+
 
 ## 0.4.0 — 2026-10-11
 
