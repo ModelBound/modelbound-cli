@@ -22,19 +22,21 @@ import { registerSkill } from "./commands/skill.js";
 import { registerOutcome } from "./commands/outcome.js";
 import { registerHarness } from "./commands/harness.js";
 import { registerTrace } from "./commands/trace.js";
+import { registerCheck } from "./commands/check.js";
 
 const program = new Command();
 
 program
   .name("modelbound")
-  .description("ModelBound CLI — token optimization, skill pipeline, and version management")
-  .version("0.4.0")
+  .description("ModelBound CLI — Flight Check for AI agents.\n\nStart here:\n  mb check [paths]   offline safety scan (no account needed)\n  mb auth login      connect to ModelBound for sync, pipeline and live runs")
+  .version("0.5.0")
   .option("--json", "machine-readable output (NDJSON for streams)")
   .option("--quiet", "suppress progress output")
   .option("--no-color", "disable ANSI color")
   .option("--profile <name>", "named profile to use", "default")
   .option("--mcp-url <url>", "hosted MCP endpoint", process.env.MODELBOUND_MCP_URL);
 
+registerCheck(program);
 registerAuth(program);
 registerContext(program);
 registerOptimize(program);
