@@ -1,7 +1,7 @@
 {
   "name": "modelbound",
-  "version": "0.4.0",
-  "description": "ModelBound CLI — token optimization, skill pipeline, and version management from your terminal.",
+  "version": "0.5.0",
+  "description": "ModelBound CLI — Flight Check for AI agents: offline safety scan, skill pipeline, sync and live runs.",
   "license": "MIT",
   "type": "module",
   "bin": {
