@@ -1,28 +1,33 @@
-# @modelbound/cli
+# modelbound (CLI)
 
-The ModelBound command-line interface. Run token optimization, the full Skill Development Pipeline, tests, benchmarks, and version control on agent skills — locally or against your ModelBound cloud library — without leaving your terminal.
+Flight Check for AI agents, from your terminal.
 
 ```bash
-npm install -g @modelbound/cli
-# or
-npx @modelbound/cli --help
-
-mb login        # device-code auth, no browser copy/paste
-mb optimize ./skills/code-review.md
-mb pipeline run --skill code-review
-mb skill test code-review --model gpt-4o
-mb skill versions code-review
-mb skill diff code-review --from previous --to current
-mb skill restore code-review <version-id>
-mb health
+npx modelbound check ./SKILL.md      # offline safety scan, no account needed
+npx modelbound check .claude/skills  # scan a whole folder
 ```
 
-The CLI is the same surface you'd get from the MCP server (`modelbound-mcp`) and the IDE extensions — pick whichever interface fits your workflow.
+`mb check` scans skills, CLAUDE.md, AGENTS.md, .cursorrules and prompts for prompt injection, data exfiltration,
+leaked secrets, destructive commands, wildcard tool access, unbounded retry loops and missing output formats.
+It runs locally with zero AI cost and exits non-zero on blocking findings, so it drops straight into CI
+(`--strict` also fails on warnings, `--json` for machines).
+
+Want to know how much a skill actually helps? Run a Skill Lift A/B test at https://modelbound.co/flight-check.
+
+Connect to ModelBound for sync, the pipeline and live runs:
+
+```bash
+npm install -g modelbound
+mb auth login
+mb pipeline run --skill code-review
+mb health
+```
 
 ## Commands
 
 | Command | Description |
 |---|---|
+| `mb check [paths]` | Flight Check: offline safety scan. Exit 1 on blocking findings. |
 | `mb login` / `mb logout` / `mb whoami` | Device-code auth. Token stored at `~/.modelbound/config.json` (0600). |
 | `mb optimize <file\|skill>` | Run token optimization. `--apply` saves a new version. |
 | `mb suggestions [--file id]` | List pending optimization suggestions. |
