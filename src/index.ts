@@ -22,7 +22,7 @@ import { registerSkill } from "./commands/skill.js";
 import { registerOutcome } from "./commands/outcome.js";
 import { registerHarness } from "./commands/harness.js";
 import { registerTrace } from "./commands/trace.js";
-import { registerCheck } from "./commands/check.js";
+import { registerCheck, registerScan } from "./commands/check.js";
 
 const program = new Command();
 
@@ -36,6 +36,7 @@ program
   .option("--profile <name>", "named profile to use", "default")
   .option("--mcp-url <url>", "hosted MCP endpoint", process.env.MODELBOUND_MCP_URL);
 
+registerScan(program);
 registerCheck(program);
 registerAuth(program);
 registerContext(program);
