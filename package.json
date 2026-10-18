@@ -1,7 +1,7 @@
 {
   "name": "modelbound",
-  "version": "0.5.0",
-  "description": "ModelBound CLI — Flight Check for AI agents: offline safety scan, skill pipeline, sync and live runs.",
+  "version": "0.6.0",
+  "description": "ModelBound CLI \u2014 Flight Check for AI agents: offline safety scan, skill pipeline, sync and live runs.",
   "license": "MIT",
   "type": "module",
   "bin": {
